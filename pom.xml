@@ -18,11 +18,11 @@
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  
+
   <groupId>dev.morling.demos</groupId>
   <artifactId>average</artifactId>
   <version>1.0.0-SNAPSHOT</version>
-  
+
   <properties>
     <maven.compiler.parameters>true</maven.compiler.parameters>
     <maven.compiler.release>21</maven.compiler.release>
@@ -67,17 +67,30 @@
       <version>3.21.0</version>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.openjdk.jmh</groupId>
+      <artifactId>jmh-core</artifactId>
+      <version>1.37</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.openjdk.jmh</groupId>
+      <artifactId>jmh-generator-annprocess</artifactId>
+      <version>1.37</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
     <!-- Keep alphabetic order -->
     <pluginManagement>
       <plugins>
-        <plugin>
-          <groupId>com.mycila</groupId>
-          <artifactId>license-maven-plugin</artifactId>
-          <version>4.1</version>
-        </plugin>
+<!--        <plugin>-->
+<!--          <groupId>com.mycila</groupId>-->
+<!--          <artifactId>license-maven-plugin</artifactId>-->
+<!--          <version>4.1</version>-->
+<!--        </plugin>-->
         <plugin>
           <groupId>net.revelc.code.formatter</groupId>
           <artifactId>formatter-maven-plugin</artifactId>
@@ -164,7 +177,18 @@
       </plugins>
     </pluginManagement>
 
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+
+        <configuration>
+          <argLine>--add-modules jdk.incubator.vector --enable-preview</argLine>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
+
   <profiles>
     <profile>
       <id>ci</id>
@@ -195,30 +219,30 @@
       </activation>
       <build>
         <plugins>
-          <plugin>
-            <groupId>com.mycila</groupId>
-            <artifactId>license-maven-plugin</artifactId>
-            <configuration>
-              <header>etc/license.txt</header>
-              <strictCheck>true</strictCheck>
-              <aggregate>true</aggregate>
-              <excludes>
-                <exclude>LICENSE.txt</exclude>
-                <exclude>**/.dontdelete</exclude>
-                <exclude>**/measurements*.txt</exclude>
-                <exclude>**/measurements*.out</exclude>
-                <exclude>out_expected.txt</exclude>
-                <exclude>github_users.txt</exclude>
-              </excludes>
-            </configuration>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>check</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
+<!--          <plugin>-->
+<!--            <groupId>com.mycila</groupId>-->
+<!--            <artifactId>license-maven-plugin</artifactId>-->
+<!--            <configuration>-->
+<!--              <header>etc/license.txt</header>-->
+<!--              <strictCheck>true</strictCheck>-->
+<!--              <aggregate>true</aggregate>-->
+<!--              <excludes>-->
+<!--                <exclude>LICENSE.txt</exclude>-->
+<!--                <exclude>**/.dontdelete</exclude>-->
+<!--                <exclude>**/measurements*.txt</exclude>-->
+<!--                <exclude>**/measurements*.out</exclude>-->
+<!--                <exclude>out_expected.txt</exclude>-->
+<!--                <exclude>github_users.txt</exclude>-->
+<!--              </excludes>-->
+<!--            </configuration>-->
+<!--            <executions>-->
+<!--              <execution>-->
+<!--                <goals>-->
+<!--                  <goal>check</goal>-->
+<!--                </goals>-->
+<!--              </execution>-->
+<!--            </executions>-->
+<!--          </plugin>-->
           <plugin>
             <groupId>net.revelc.code.formatter</groupId>
             <artifactId>formatter-maven-plugin</artifactId>
