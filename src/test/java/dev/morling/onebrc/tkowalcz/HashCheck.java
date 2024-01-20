@@ -113,7 +113,7 @@ public class HashCheck {
         byte[] name = Arrays.copyOf(city.getBytes(StandardCharsets.UTF_8), SPECIES.length());
         ByteVector byteVector = ByteVector.fromArray(SPECIES, name, 0);
 
-        long hash = byteVector.reinterpretAsInts().reduceLanesToLong(VectorOperators.ADD);
+        long hash = byteVector.reduceLanesToLong(VectorOperators.MUL);
 
         int h1 = (int) (hash ^ (hash >>> 32));
         short s1 = (short) (h1 ^ (h1 >>> 16));

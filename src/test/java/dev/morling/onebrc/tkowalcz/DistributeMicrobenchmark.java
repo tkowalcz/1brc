@@ -22,6 +22,7 @@ import jdk.incubator.vector.Vector;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.profile.LinuxPerfAsmProfiler;
 import org.openjdk.jmh.profile.LinuxPerfNormProfiler;
+import org.openjdk.jmh.profile.LinuxPerfProfiler;
 import org.openjdk.jmh.profile.Profiler;
 import org.openjdk.jmh.results.format.ResultFormatType;
 import org.openjdk.jmh.runner.Runner;
@@ -94,9 +95,9 @@ import java.util.concurrent.atomic.AtomicInteger;
         "-XX:+EnableVectorAggressiveReboxing",
         "-XX:+UseEpsilonGC",
         "-Djdk.incubator.vector.VECTOR_ACCESS_OOB_CHECK=0",
-//        "-XX:MaxDirectMemorySize=8589934592",
-        "-Xmx1g",
-        "-Xms1g"
+// "-XX:MaxDirectMemorySize=8589934592",
+// "-Xmx1g",
+// "-Xms1g"
 })
 @Threads(1)
 public class DistributeMicrobenchmark {
@@ -109,27 +110,27 @@ public class DistributeMicrobenchmark {
 
     public static final int TABLE_SIZE = 0x400000;
     public static final long MEM_SIZE = 6 * 1000_000_000L;
-//    public static final ShortVector ATOI_MUL = ShortVector.fromArray(
-//            ShortVector.SPECIES_256,
-//            new short[]{0, 100, 10, 1, 0, 100, 10, 1, 0, 100, 10, 1, 0, 100, 10, 1},
-//            0
-//    );
+    // public static final ShortVector ATOI_MUL = ShortVector.fromArray(
+    // ShortVector.SPECIES_256,
+    // new short[]{0, 100, 10, 1, 0, 100, 10, 1, 0, 100, 10, 1, 0, 100, 10, 1},
+    // 0
+    // );
 
     public static final ShortVector ATOI_MUL = ShortVector.fromArray(
             ShortVector.SPECIES_256,
             new short[]{1, 10, 100, 0, 1, 10, 100, 0, 1, 10, 100, 0, 1, 10, 100, 0},
-            0
-    );
+            0);
     public static final VectorMask<Short> ATOI_REDUCE_1 = VectorMask.fromLong(ShortVector.SPECIES_256, 0x00_00_00_00_00_00_00_0FL);
     public static final VectorMask<Short> ATOI_REDUCE_2 = VectorMask.fromLong(ShortVector.SPECIES_256, 0x00_00_00_00_00_00_00_F0L);
     public static final VectorMask<Short> ATOI_REDUCE_3 = VectorMask.fromLong(ShortVector.SPECIES_256, 0x00_00_00_00_00_00_0F_00L);
     public static final VectorMask<Short> ATOI_REDUCE_4 = VectorMask.fromLong(ShortVector.SPECIES_256, 0x00_00_00_00_00_00_F0_00L);
 
-    //    @Param({"32", "64", "128", "256", "512", "1024", "2048", "4096"})
-//    private int intermediateArraySize;
+    // @Param({"32", "64", "128", "256", "512", "1024", "2048", "4096"})
+    // private int intermediateArraySize;
     private int[][] data;
 
     private MemoryMappedFile memoryMappedFile;
+    private long dataAddress;
 
     record TmpAggregate(short cityId, long temperature) {
     }
@@ -140,11 +141,16 @@ public class DistributeMicrobenchmark {
         AtomicInteger sequence = new AtomicInteger();
 
         Unsafe unsafe = UnsafeAccess.UNSAFE;
-//        recreateData(hmm, sequence);
+        // recreateData(hmm, sequence);
 
+        long size = Files.size(Path.of("row-data.dat"));
+        dataAddress = unsafe.allocateMemory(size);
         memoryMappedFile = mmapDataFile("row-data.dat");
+
+        unsafe.copyMemory(null, memoryMappedFile.pointer(), null, dataAddress, size);
+
         int maxId = Integer.MIN_VALUE;
-        for (long i = memoryMappedFile.pointer(); i < memoryMappedFile.pointer() + memoryMappedFile.size(); ) {
+        for (long i = dataAddress; i < dataAddress + memoryMappedFile.size(); ) {
             i += Long.BYTES * 4;
             long cities = unsafe.getLong(i);
             i += Long.BYTES;
@@ -158,6 +164,10 @@ public class DistributeMicrobenchmark {
             maxId = (short) Math.max(maxId, city2);
             maxId = (short) Math.max(maxId, city3);
             maxId = (short) Math.max(maxId, city4);
+            // int cityId = (short) unsafe.getInt(i);
+            // i += Integer.BYTES;
+            //
+            // maxId = (short) Math.max(maxId, cityId);
         }
 
         System.out.println("maxId = " + maxId);
@@ -276,9 +286,8 @@ public class DistributeMicrobenchmark {
     record MinMaxSum(int min, int max, int sum) {
     }
 
-
-    //    @Benchmark
-    public void aggregate() {
+    // @Benchmark
+    public void asggregate() {
         Unsafe unsafe = UnsafeAccess.UNSAFE;
 
         for (long i = memoryMappedFile.pointer(); i < memoryMappedFile.pointer() + memoryMappedFile.size() - 4 * Long.BYTES; ) {
@@ -294,31 +303,40 @@ public class DistributeMicrobenchmark {
         }
     }
 
+    public static final VectorShuffle<Short> ATOI_SHUFFLE_1 = VectorShuffle.fromValues(ShortVector.SPECIES_256, 0, 3, 0, 0, 0, 7, 0, 0, 0, 11, 0, 0, 0, 15, 0, 0);
+    public static final VectorShuffle<Short> ATOI_SHUFFLE_2 = VectorShuffle.fromValues(ShortVector.SPECIES_256, 0, 2, 0, 0, 0, 6, 0, 0, 0, 10, 0, 0, 0, 14, 0, 0);
+
     @Benchmark
     public void aggregate2() {
         Unsafe unsafe = UnsafeAccess.UNSAFE;
 
         MemorySegment memorySegment = MemorySegment
-                .ofAddress(memoryMappedFile.pointer())
+                .ofAddress(dataAddress)
                 .reinterpret(memoryMappedFile.size());
 
         // -12.3 12.3 2.3 -2.3
         // 00 -01 -02 -03 | 00 01 02 03 | 00 00 02 03 | 00 00 -02 -03
         // 0 100 10 1
         //
-//        for (long i = memoryMappedFile.pointer(); i < memoryMappedFile.pointer() + memoryMappedFile.size() - 4 * Long.BYTES; ) {
-        for (long i = 0; i < memoryMappedFile.size() - 4 * Long.BYTES; ) {
+        // -12.3 12.3 2.3 -2.3
+        // 0- 01 02 0. 03 | 00 01 02 03 | 00 00 02 03 | 00 00 -02 -03
+        // for (long i = memoryMappedFile.pointer(); i < memoryMappedFile.pointer() + memoryMappedFile.size() - 4 * Long.BYTES; ) {
+        for (long i = 0; i < memoryMappedFile.size() - 80; ) {
             ShortVector shortVector = ShortVector.fromMemorySegment(ShortVector.SPECIES_256, memorySegment, i, ByteOrder.nativeOrder());
-            shortVector = shortVector.mul(ATOI_MUL);
-
-            short temp1 = shortVector.reduceLanes(VectorOperators.ADD, ATOI_REDUCE_1);
-            short temp2 = shortVector.reduceLanes(VectorOperators.ADD, ATOI_REDUCE_2);
-            short temp3 = shortVector.reduceLanes(VectorOperators.ADD, ATOI_REDUCE_3);
-            short temp4 = shortVector.reduceLanes(VectorOperators.ADD, ATOI_REDUCE_4);
-
             i += LongVector.SPECIES_256.vectorByteSize();
             long cities = memorySegment.get(ValueLayout.JAVA_LONG, i);
             i += Long.BYTES;
+
+            shortVector = shortVector.mul(ATOI_MUL);
+            ShortVector s1 = shortVector.rearrange(ATOI_SHUFFLE_1);
+            ShortVector s2 = shortVector.rearrange(ATOI_SHUFFLE_2);
+
+            ShortVector result = shortVector.add(s1).add(s2);
+
+            short temp1 = result.lane(1);
+            short temp2 = result.lane(5);
+            short temp3 = result.lane(9);
+            short temp4 = result.lane(13);
 
             short city1 = (short) (cities >> 48);
             short city2 = (short) (cities >> 32);
@@ -329,6 +347,77 @@ public class DistributeMicrobenchmark {
             handleCity(city2, temp2);
             handleCity(city3, temp3);
             handleCity(city4, temp4);
+        }
+    }
+
+    @Benchmark
+    public void aggregateDouble2() {
+        short[] tmp1 = new short[16];
+        short[] tmp2 = new short[16];
+        Unsafe unsafe = UnsafeAccess.UNSAFE;
+
+        MemorySegment memorySegment = MemorySegment
+                .ofAddress(dataAddress)
+                .reinterpret(memoryMappedFile.size());
+
+        // -12.3 12.3 2.3 -2.3
+        // 00 -01 -02 -03 | 00 01 02 03 | 00 00 02 03 | 00 00 -02 -03
+        // 0 100 10 1
+        //
+        // for (long i = memoryMappedFile.pointer(); i < memoryMappedFile.pointer() + memoryMappedFile.size() - 4 * Long.BYTES; ) {
+        for (long i = 0; i < memoryMappedFile.size() - 80; ) {
+            ShortVector shortVector1 = ShortVector.fromMemorySegment(ShortVector.SPECIES_256, memorySegment, i, ByteOrder.nativeOrder());
+            i += LongVector.SPECIES_256.vectorByteSize();
+            long cities1 = memorySegment.get(ValueLayout.JAVA_LONG, i);
+            i += Long.BYTES;
+
+            ShortVector shortVector2 = ShortVector.fromMemorySegment(ShortVector.SPECIES_256, memorySegment, i, ByteOrder.nativeOrder());
+            i += LongVector.SPECIES_256.vectorByteSize();
+            long cities2 = memorySegment.get(ValueLayout.JAVA_LONG, i);
+            i += Long.BYTES;
+
+            shortVector1 = shortVector1.mul(ATOI_MUL);
+            ShortVector s1 = shortVector1.rearrange(ATOI_SHUFFLE_1);
+            ShortVector s2 = shortVector1.rearrange(ATOI_SHUFFLE_2);
+            ShortVector result1 = shortVector1.add(s1).add(s2);
+
+            shortVector2 = shortVector2.mul(ATOI_MUL);
+            s1 = shortVector2.rearrange(ATOI_SHUFFLE_1);
+            s2 = shortVector2.rearrange(ATOI_SHUFFLE_2);
+            ShortVector result2 = shortVector2.add(s1).add(s2);
+
+            {
+                short city1 = (short) (cities1 >> 48);
+                short city2 = (short) (cities1 >> 32);
+                short city3 = (short) (cities1 >> 16);
+                short city4 = (short) cities1;
+
+                handleCity(city1, result1.lane(1));
+                handleCity(city2, result1.lane(5));
+                handleCity(city3, result1.lane(9));
+                handleCity(city4, result1.lane(13));
+//                result1.intoArray(tmp1, 0);
+//                handleCity(city1, tmp1[1]);
+//                handleCity(city2, tmp1[5]);
+//                handleCity(city3, tmp1[9]);
+//                handleCity(city4, tmp1[13]);
+            }
+            {
+                short city1 = (short) (cities2 >> 48);
+                short city2 = (short) (cities2 >> 32);
+                short city3 = (short) (cities2 >> 16);
+                short city4 = (short) cities2;
+
+                handleCity(city1, result2.lane(1));
+                handleCity(city2, result2.lane(5));
+                handleCity(city3, result2.lane(9));
+                handleCity(city4, result2.lane(13));
+//                result2.intoArray(tmp2, 0);
+//                handleCity(city1, tmp2[1]);
+//                handleCity(city2, tmp2[5]);
+//                handleCity(city3, tmp2[9]);
+//                handleCity(city4, tmp2[13]);
+            }
         }
     }
 
@@ -407,8 +496,7 @@ public class DistributeMicrobenchmark {
         sumVector.intoArray(data, 17);
     }
 
-
-    //    @Benchmark
+    // @Benchmark
     public List<MinMaxSum> sumMinMax() {
         VectorSpecies<Integer> species256 = IntVector.SPECIES_256;
         List<MinMaxSum> result = new ArrayList<>(data.length);
@@ -456,8 +544,8 @@ public class DistributeMicrobenchmark {
 
     public static void main(String[] args) throws RunnerException {
 //        Class<? extends Profiler> profilerClass = LinuxPerfProfiler.class;
-//        Class<? extends Profiler> profilerClass = AsyncProfiler.class;
-//        Class<? extends Profiler> profilerClass = LinuxPerfNormProfiler.class;
+        // Class<? extends Profiler> profilerClass = AsyncProfiler.class;
+        // Class<? extends Profiler> profilerClass = LinuxPerfNormProfiler.class;
         Class<? extends Profiler> profilerClass = LinuxPerfAsmProfiler.class;
 
         Options opt = new OptionsBuilder()
@@ -466,7 +554,7 @@ public class DistributeMicrobenchmark {
                 .measurementIterations(2)
                 .resultFormat(ResultFormatType.CSV)
                 .jvmArgsAppend("--add-modules", "jdk.incubator.vector")
-                .addProfiler(profilerClass)
+//                .addProfiler(profilerClass)
                 // .addProfiler("async:libPath=/root/libasyncProfiler.so;output=flamegraph;dir=profile-results")
                 .build();
 

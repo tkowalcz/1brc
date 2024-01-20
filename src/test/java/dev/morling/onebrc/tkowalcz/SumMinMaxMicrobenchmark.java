@@ -47,7 +47,7 @@ import java.util.concurrent.TimeUnit;
         "-XX:+AlwaysPreTouch",
         "-XX:+EnableVectorReboxing",
         "-XX:+EnableVectorAggressiveReboxing",
-//        "-XX:+UseEpsilonGC",
+        // "-XX:+UseEpsilonGC",
         "-Djdk.incubator.vector.VECTOR_ACCESS_OOB_CHECK=0",
         "-Xmx8g",
         "-Xmn8g"
@@ -104,14 +104,14 @@ public class SumMinMaxMicrobenchmark {
 
     private static MemorySegment mmapDataFile(String fileName, Arena arena) throws IOException {
         try (RandomAccessFile file = new RandomAccessFile(fileName, "r");
-             FileChannel channel = file.getChannel()) {
+                FileChannel channel = file.getChannel()) {
             return channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size(), arena);
         }
     }
 
     private static MemoryMappedFile mmapDataFile(String fileName) throws IOException {
         try (RandomAccessFile file = new RandomAccessFile(fileName, "r");
-             FileChannel channel = file.getChannel()) {
+                FileChannel channel = file.getChannel()) {
             long pointer = IoUtil.map(channel, FileChannel.MapMode.READ_ONLY, 0, channel.size());
             return new MemoryMappedFile(
                     pointer,
@@ -124,8 +124,8 @@ public class SumMinMaxMicrobenchmark {
 
     public static void main(String[] args) throws RunnerException {
         Class<? extends Profiler> profilerClass = LinuxPerfProfiler.class;
-//        Class<? extends Profiler> profilerClass = AsyncProfiler.class;
-//        Class<? extends Profiler> profilerClass = LinuxPerfNormProfiler.class;
+        // Class<? extends Profiler> profilerClass = AsyncProfiler.class;
+        // Class<? extends Profiler> profilerClass = LinuxPerfNormProfiler.class;
         // Class<? extends Profiler> profilerClass = LinuxPerfAsmProfiler.class;
 
         Options opt = new OptionsBuilder()

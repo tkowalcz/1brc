@@ -78,23 +78,23 @@ public class VectorSplitMicrobenchmark {
     // Jayapura;-5.3\Detroit;7.9\Las Ve
     // .........TTTTT........TTTT...... < ;
     // .............T...........T...... == \n
-//    @Benchmark
-//    public float backToTheDrawingBoard_aligned() {
-//        Vector<Byte> byteVector = ByteVector.fromArray(SPECIES, line, 0);
-//        VectorMask<Byte> vectorMask1 = byteVector.compare(VectorOperators.LT, SEMICOLON_VECTOR);
-//        VectorMask<Byte> vectorMask2 = byteVector.compare(VectorOperators.GE, MINUS_VECTOR);
-//
-//        vectorMask1.and(vectorMask2);
-//
-//        Vector<Byte> compress = byteVector.compress(vectorMask);
-//
-//        return compress.reduceLanesToLong(VectorOperators.ADD);
-//    }
+    // @Benchmark
+    // public float backToTheDrawingBoard_aligned() {
+    // Vector<Byte> byteVector = ByteVector.fromArray(SPECIES, line, 0);
+    // VectorMask<Byte> vectorMask1 = byteVector.compare(VectorOperators.LT, SEMICOLON_VECTOR);
+    // VectorMask<Byte> vectorMask2 = byteVector.compare(VectorOperators.GE, MINUS_VECTOR);
+    //
+    // vectorMask1.and(vectorMask2);
+    //
+    // Vector<Byte> compress = byteVector.compress(vectorMask);
+    //
+    // return compress.reduceLanesToLong(VectorOperators.ADD);
+    // }
 
     public static void main(String[] args) throws RunnerException {
         Class<? extends Profiler> profilerClass = LinuxPerfProfiler.class;
-//        Class<? extends Profiler> profilerClass = AsyncProfiler.class;
-//        Class<? extends Profiler> profilerClass = LinuxPerfNormProfiler.class;
+        // Class<? extends Profiler> profilerClass = AsyncProfiler.class;
+        // Class<? extends Profiler> profilerClass = LinuxPerfNormProfiler.class;
         // Class<? extends Profiler> profilerClass = LinuxPerfAsmProfiler.class;
 
         Options opt = new OptionsBuilder()

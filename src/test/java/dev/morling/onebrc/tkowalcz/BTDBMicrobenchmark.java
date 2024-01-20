@@ -56,6 +56,7 @@ public class BTDBMicrobenchmark {
     private static final VectorSpecies<Byte> SPECIES = ByteVector.SPECIES_256;
 
     private static final Vector<Byte> DELIMITER_VECTOR = SPECIES.broadcast('\n');
+    private static final Vector<Byte> NEWLINE_VECTOR = SPECIES.broadcast('\n');
 
     private static final String FILE = "measurements.txt";
 
@@ -73,11 +74,13 @@ public class BTDBMicrobenchmark {
             inputData = mmapDataFile(FILE, arena);
             dataPointer = mmapDataFile(FILE);
             dataTable = new CalculateAverage_tkowalcz.StatisticsAggregate[TABLE_SIZE];
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
+    // "London;14.6\nUpington;20.4\nPalerm"
     @Benchmark
     public long backToTheDrawingBoard_unaligned() {
         int vectorByteSize = SPECIES.vectorByteSize();
@@ -91,20 +94,24 @@ public class BTDBMicrobenchmark {
         while (offset < end) {
             loopIterations++;
             Vector<Byte> byteVector1 = SPECIES.fromMemorySegment(inputData, vectorOffset, ByteOrder.nativeOrder());
-//            vectorOffset += vectorByteSize;
-//            Vector<Byte> byteVector2 = SPECIES.fromMemorySegment(inputData, vectorOffset, ByteOrder.nativeOrder());
+            VectorMask<Byte> newlineMask = byteVector1.compare(VectorOperators.EQ, NEWLINE_VECTOR);
+            VectorMask<Byte> semicolonMask = byteVector1.compare(VectorOperators.EQ, DELIMITER_VECTOR);
 
-            int firstDelimiter = byteVector1.compare(VectorOperators.EQ, DELIMITER_VECTOR).firstTrue();
-            byteVector1.convertShape(VectorOperators.B2S, ShortVector.SPECIES_256, 0);
-            offset += firstDelimiter + 1;
-            vectorOffset = offset & 0xFF_FF_FF_FF_FF_FF_FF_E0L;
+            if (newlineMask.trueCount() == 1) {
+                // byteVector1.blend(newlineMask);
+            }
+
+            // int firstDelimiter = byteVector1.compare(VectorOperators.EQ, DELIMITER_VECTOR).firstTrue();
+            // byteVector1.convertShape(VectorOperators.B2S, ShortVector.SPECIES_256, 0);
+            // offset += firstDelimiter + 1;
+            // vectorOffset = offset & 0xFF_FF_FF_FF_FF_FF_FF_E0L;
         }
 
-//        System.out.println("loopIterations = " + loopIterations);
-        return result;
+        // System.out.println("loopIterations = " + loopIterations);
+        return offset;
     }
 
-    @Benchmark
+    // @Benchmark
     public long backToTheDrawingBoard_aligned() {
         int vectorByteSize = SPECIES.vectorByteSize();
 
@@ -126,7 +133,7 @@ public class BTDBMicrobenchmark {
         return result;
     }
 
-    @Benchmark
+    // @Benchmark
     public long iterative() {
         Unsafe unsafe = UnsafeAccess.UNSAFE;
 
@@ -145,14 +152,14 @@ public class BTDBMicrobenchmark {
 
     private static MemorySegment mmapDataFile(String fileName, Arena arena) throws IOException {
         try (RandomAccessFile file = new RandomAccessFile(fileName, "r");
-             FileChannel channel = file.getChannel()) {
+                FileChannel channel = file.getChannel()) {
             return channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size(), arena);
         }
     }
 
     private static MemoryMappedFile mmapDataFile(String fileName) throws IOException {
         try (RandomAccessFile file = new RandomAccessFile(fileName, "r");
-             FileChannel channel = file.getChannel()) {
+                FileChannel channel = file.getChannel()) {
             long pointer = IoUtil.map(channel, FileChannel.MapMode.READ_ONLY, 0, channel.size());
             return new MemoryMappedFile(
                     pointer,
@@ -165,8 +172,8 @@ public class BTDBMicrobenchmark {
 
     public static void main(String[] args) throws RunnerException {
         Class<? extends Profiler> profilerClass = LinuxPerfProfiler.class;
-//        Class<? extends Profiler> profilerClass = AsyncProfiler.class;
-//        Class<? extends Profiler> profilerClass = LinuxPerfNormProfiler.class;
+        // Class<? extends Profiler> profilerClass = AsyncProfiler.class;
+        // Class<? extends Profiler> profilerClass = LinuxPerfNormProfiler.class;
         // Class<? extends Profiler> profilerClass = LinuxPerfAsmProfiler.class;
 
         Options opt = new OptionsBuilder()

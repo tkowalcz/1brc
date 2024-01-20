@@ -17,6 +17,7 @@ package dev.morling.onebrc.tkowalcz;
 
 import jdk.incubator.vector.*;
 import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.profile.JavaFlightRecorderProfiler;
 import org.openjdk.jmh.profile.LinuxPerfAsmProfiler;
 import org.openjdk.jmh.profile.Profiler;
 import org.openjdk.jmh.results.format.ResultFormatType;
@@ -24,7 +25,6 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
-import sun.misc.Unsafe;
 
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
         "-XX:+UnlockDiagnosticVMOptions",
         "-XX:PrintAssemblyOptions=intel",
         "-XX:+UnlockExperimentalVMOptions",
+        "-XX:+DebugNonSafepoints",
         "-XX:+AlwaysPreTouch",
         "-XX:+EnableVectorReboxing",
         "-XX:+EnableVectorAggressiveReboxing",
@@ -44,8 +45,6 @@ import java.util.concurrent.TimeUnit;
 })
 @Threads(1)
 public class ParseMicrobenchmark {
-
-    public static final long ARRAY_BASE_OFFSET = Unsafe.getUnsafe().arrayBaseOffset(byte[].class);
 
     public static final VectorMask<Short> AH = VectorMask.fromLong(ShortVector.SPECIES_256, 0xFF_FF_00_00L);
     public static final VectorMask<Short> AL = VectorMask.fromLong(ShortVector.SPECIES_256, 0x00_00_FF_FFL);
@@ -84,21 +83,28 @@ public class ParseMicrobenchmark {
             LongVector.fromArray(LongVector.SPECIES_256, new long[]{ -100, -10, 0, 0 }, 0),
             LongVector.fromArray(LongVector.SPECIES_256, new long[]{ 10, 0, 0, 0 }, 0)
     };
+    public static final VectorShuffle<Short> ATOI_SHUFFLE_1 = VectorShuffle.fromValues(ShortVector.SPECIES_256, 0, 3, 0, 0, 0, 7, 0, 0, 0, 11, 0, 0, 0, 15, 0, 0);
+    public static final VectorShuffle<Short> ATOI_SHUFFLE_2 = VectorShuffle.fromValues(ShortVector.SPECIES_256, 0, 2, 0, 0, 0, 6, 0, 0, 0, 10, 0, 0, 0, 14, 0, 0);
 
     private byte[] value;
     private int position;
 
     private long[] tmpArr;
     private int[] indexMap = new int[]{ 1, 4, 8, 16 };
+    private short[] shortData1;
+    private short[] shortData2;
 
     @Setup
     public void setup() {
         value = "Warszawa;-12.3\nKraków;0.4\nSuwałki;-4.3\nGdańsk;9.8\nKłaj;-1.4".getBytes(StandardCharsets.UTF_8);
         position = 9;
         tmpArr = new long[64];
+
+        shortData1 = new short[]{ 0, -1, -2, -3, 0, 1, 2, 3, 0, 0, 2, 3, 0, 0, -2, -2 };
+        shortData2 = new short[]{ 0, 1, 2, 3, 0, -1, -2, -3, 0, 0, 2, 3, 0, 0, -2, -2 };
     }
 
-    @Benchmark
+    // @Benchmark
     public float parseFloat() {
         int integerPart = 0;
         int fractionalPart = 0;
@@ -147,7 +153,7 @@ public class ParseMicrobenchmark {
     // .reduceLanesToLong(VectorOperators.ADD);
     // }
 
-    @Benchmark
+    // @Benchmark
     public long parseVectorised() {
         Vector<Byte> vector = ByteVector.fromArray(
                 ByteVector.SPECIES_256, value, 9);
@@ -162,7 +168,7 @@ public class ParseMicrobenchmark {
                 .reduceLanesToLong(VectorOperators.ADD);
     }
 
-    @Benchmark
+    // @Benchmark
     public long parseTwoVectorised() {
         Vector<Byte> vector1 = ByteVector.fromArray(
                 ByteVector.SPECIES_256, value, 9);
@@ -191,7 +197,7 @@ public class ParseMicrobenchmark {
         return v1 + v2;
     }
 
-    @Benchmark
+    // @Benchmark
     public long parseTwoInOneVectorised() {
         byte[] charData = "-12.3\n          0.4\n            ".getBytes(StandardCharsets.UTF_8);
         Vector<Byte> vector = ByteVector.fromArray(
@@ -214,7 +220,7 @@ public class ParseMicrobenchmark {
         return v1 + v2;
     }
 
-    @Benchmark
+    // @Benchmark
     public long parseFourInTwoInOneVectorised() {
         byte[] charData1 = "-12.3\n          0.4\n            ".getBytes(StandardCharsets.UTF_8);
         byte[] charData2 = "2.8  \n          34.1\n           ".getBytes(StandardCharsets.UTF_8);
@@ -254,33 +260,74 @@ public class ParseMicrobenchmark {
         return v1 + v2 + v3 + v4;
     }
 
+    public static final ShortVector ATOI_MUL = ShortVector.fromArray(
+            ShortVector.SPECIES_256,
+            new short[]{ 0, 100, 10, 1, 0, 100, 10, 1, 0, 100, 10, 1, 0, 100, 10, 1, 0 },
+            0);
+
+    public static final IntVector ATOI_MUL_INT = IntVector.fromArray(
+            IntVector.SPECIES_256,
+            new int[]{ 0, 100, 10, 1, 0, 100, 10, 1 },
+            0);
+
+    public static final VectorMask<Short> ATOI_REDUCE_1 = VectorMask.fromLong(ShortVector.SPECIES_256, 0x00_00_00_00_00_00_00_0FL);
+    public static final VectorMask<Short> ATOI_REDUCE_2 = VectorMask.fromLong(ShortVector.SPECIES_256, 0x00_00_00_00_00_00_00_F0L);
+    public static final VectorMask<Short> ATOI_REDUCE_3 = VectorMask.fromLong(ShortVector.SPECIES_256, 0x00_00_00_00_00_00_0F_00L);
+    public static final VectorMask<Short> ATOI_REDUCE_4 = VectorMask.fromLong(ShortVector.SPECIES_256, 0x00_00_00_00_00_00_F0_00L);
+
+    // -12.3 12.3 2.3 -2.3
+    // 00 -01 -02 -03 | 00 01 02 03 | 00 00 02 03 | 00 00 -02 -03
+    // 0 100 10 1
+    //
+    @Benchmark
+    public long parseBinaryCodedDecimal() {
+        ShortVector shortVector = ShortVector.fromArray(ShortVector.SPECIES_256, shortData1, 0)
+                .mul(ATOI_MUL);
+
+        // ShortVector s1 = shortVector.rearrange(ATOI_SHUFFLE_1);
+        // ShortVector s2 = shortVector.rearrange(ATOI_SHUFFLE_2);
+
+        // ShortVector result = shortVector.add(s1).add(s2);
+        // return result.lane(1) | result.lane(5) | result.lane(9) | result.lane(13);
+        short temp1 = (short) shortVector.reduceLanesToLong(VectorOperators.ADD, ATOI_REDUCE_1);
+        short temp2 = (short) shortVector.reduceLanesToLong(VectorOperators.ADD, ATOI_REDUCE_2);
+        short temp3 = (short) shortVector.reduceLanesToLong(VectorOperators.ADD, ATOI_REDUCE_3);
+        short temp4 = (short) shortVector.reduceLanesToLong(VectorOperators.ADD, ATOI_REDUCE_4);
+
+        return temp1 | temp2 | temp3 - temp4;
+    }
+
     // @Benchmark
-    public void parseFourInOneVectorised() {
-        byte[] charData = "-12.3\n  0.4\n    14.5    -2.1    ".getBytes(StandardCharsets.UTF_8);
-        Vector<Byte> vector = ByteVector.fromArray(
-                ByteVector.SPECIES_256, charData, 0);
+    public long parseTwoBinaryCodedDecimals() {
+        ShortVector shortVector1 = ShortVector.fromArray(ShortVector.SPECIES_256, shortData1, 0)
+                .mul(ATOI_MUL);
 
-        VectorMask<Byte> mask = vector.compare(VectorOperators.LT, ASCII_ZERO);
-        int lookupIndex1 = (int) (mask.toLong() & 0x00_00_00_00_00_00_00_0FL);
-        int lookupIndex2 = (int) (mask.toLong() & 0x00_00_00_00_00_00_00_0FL);
-        int lookupIndex3 = (int) (mask.toLong() & 0x00_00_00_00_00_00_00_0FL);
-        int lookupIndex4 = (int) (mask.toLong() >> 32);
+        ShortVector shortVector2 = ShortVector.fromArray(ShortVector.SPECIES_256, shortData2, 0)
+                .mul(ATOI_MUL);
 
-        LongVector lookup1 = STOI_MUL_LOOKUP_3[lookupIndex1];
-        // ShortVector lookup2 = STOI_MUL_LOOKUP_2[lookupIndex2];
+        ShortVector s1 = shortVector1.rearrange(ATOI_SHUFFLE_1);
+        ShortVector s2 = shortVector1.rearrange(ATOI_SHUFFLE_2);
 
-        // ShortVector lookup = lookup1.add(lookup2);
+        ShortVector result1 = shortVector1.add(s1).add(s2);
 
-        LongVector mul = (LongVector) vector
-                .sub(ASCII_ZERO)
-                .convert(VectorOperators.B2L, 0)
-                .mul(lookup1);
+        s1 = shortVector2.rearrange(ATOI_SHUFFLE_1);
+        s2 = shortVector2.rearrange(ATOI_SHUFFLE_2);
 
-        mul.intoArray(tmpArr, 0, indexMap, 0);
-        // return mul.lane(0) + mul.lane(1) + mul.lane(2) + mul.lane(3);
+        ShortVector result2 = shortVector2.add(s1).add(s2);
+
+        long r1 = result1.lane(1) | result1.lane(5) | result1.lane(9) | result1.lane(13);
+        long r2 = result2.lane(1) | result2.lane(5) | result2.lane(9) | result2.lane(13);
+
+        // short temp1 = (short) shortVector.reduceLanesToLong(VectorOperators.ADD, ATOI_REDUCE_1);
+        // short temp2 = (short) shortVector.reduceLanesToLong(VectorOperators.ADD, ATOI_REDUCE_2);
+        // short temp3 = (short) shortVector.reduceLanesToLong(VectorOperators.ADD, ATOI_REDUCE_3);
+        // short temp4 = (short) shortVector.reduceLanesToLong(VectorOperators.ADD, ATOI_REDUCE_4);
+
+        return r1 | r2;
     }
 
     public static void main(String[] args) throws RunnerException {
+        // Class<? extends Profiler> profilerClass = JavaFlightRecorderProfiler.class;
         // Class<? extends Profiler> profilerClass = LinuxPerfProfiler.class;
         // Class<? extends Profiler> profilerClass = LinuxPerfNormProfiler.class;
         Class<? extends Profiler> profilerClass = LinuxPerfAsmProfiler.class;

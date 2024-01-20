@@ -17,6 +17,7 @@ package dev.morling.onebrc.tkowalcz;
 
 import dev.morling.onebrc.CalculateAverage_tkowalcz;
 import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.profile.JavaFlightRecorderProfiler;
 import org.openjdk.jmh.profile.LinuxPerfAsmProfiler;
 import org.openjdk.jmh.profile.LinuxPerfNormProfiler;
 import org.openjdk.jmh.profile.Profiler;
@@ -25,6 +26,7 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
+import org.openjdk.jmh.runner.options.TimeValue;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -100,15 +102,17 @@ public class CalculateAverageMicrobenchmark {
     public static void main(String[] args) throws RunnerException {
         // Class<? extends Profiler> profilerClass = LinuxPerfProfiler.class;
         // Class<? extends Profiler> profilerClass = LinuxPerfNormProfiler.class;
-        Class<? extends Profiler> profilerClass = LinuxPerfAsmProfiler.class;
+        // Class<? extends Profiler> profilerClass = LinuxPerfAsmProfiler.class;
+        // Class<? extends Profiler> profilerClass = JavaFlightRecorderProfiler.class;
 
         Options opt = new OptionsBuilder()
                 .include(CalculateAverageMicrobenchmark.class.getSimpleName())
                 .warmupIterations(2)
+                .timeout(TimeValue.seconds(10))
                 .measurementIterations(2)
                 .resultFormat(ResultFormatType.CSV)
                 .jvmArgsAppend("--add-modules", "jdk.incubator.vector")
-                .addProfiler(profilerClass)
+                // .addProfiler(profilerClass)
                 .build();
 
         new Runner(opt).run();

@@ -19,6 +19,7 @@ import dev.morling.onebrc.CalculateAverage_tkowalcz;
 import dev.morling.onebrc.IoUtil;
 import jdk.incubator.vector.*;
 import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.profile.LinuxPerfAsmProfiler;
 import org.openjdk.jmh.profile.LinuxPerfProfiler;
 import org.openjdk.jmh.profile.Profiler;
 import org.openjdk.jmh.results.format.ResultFormatType;
@@ -33,8 +34,12 @@ import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
-import java.util.Arrays;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.SECONDS)
@@ -79,20 +84,21 @@ public class BTDB_Stats_Microbenchmark {
     // There are four combinations of possible mask results from comparing (less than) vector containing temperature
     // measurement with ASCII_ZERO. Hence, only four entries are populated.
     private static final ShortVector[] STOI_MUL_LOOKUP = {
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0),
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{0, -100, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0),
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0),
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0),
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{100, 10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0),
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{0, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0)
+            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
+            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 0, -100, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
+            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
+            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
+            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 100, 10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
+            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 0, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0)
     };
 
     // We also need to know the size of temperature measurement in characters, lookup table works the same way as STOI_MUL_LOOKUP.
-    private static final int[] STOI_SIZE_LOOKUP = { 0, 0, 0, 0, 5, 5, 0, 0, 0, 6, 4 };
+    private static final int[] STOI_SIZE_LOOKUP = { 0, 6, 4, 0, 5, 5 };
 
     private Arena arena;
     private MemorySegment inputData;
     private byte[] citiesMap;
+    private CalculateAverage_tkowalcz.StatisticsAggregate[] dataTable;
 
     @Setup
     public void setup() {
@@ -100,27 +106,67 @@ public class BTDB_Stats_Microbenchmark {
             arena = Arena.ofShared();
             inputData = mmapDataFile(FILE, arena);
 
+            dataTable = new CalculateAverage_tkowalcz.StatisticsAggregate[TABLE_SIZE];
             citiesMap = new byte[64 * TABLE_SIZE];
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
+    // -12.3 12.3 -2.3 2.3
+    public static final VectorShuffle<Short> ATOI_SHUFFLE = VectorShuffle.fromValues(
+            ShortVector.SPECIES_256,
+            0, 3, 0, 0, 0, 7, 0, 0, 0, 11, 0, 0, 0, 15, 0, 0);
+
+    static CalculateAverage_tkowalcz.StatisticsAggregate findCityInChain(
+                                                                         CalculateAverage_tkowalcz.StatisticsAggregate startingNode,
+                                                                         Vector<Byte> hashInput,
+                                                                         VectorMask<Byte> hashMask,
+                                                                         AtomicInteger sequence,
+                                                                         List<CalculateAverage_tkowalcz.StatisticsAggregate> realAggregates) {
+        CalculateAverage_tkowalcz.StatisticsAggregate node = startingNode.getNext();
+        while (node != null) {
+            ByteVector cityVector = ByteVector.fromArray(ByteVector.SPECIES_256, node.getCity(), 0);
+            if (!cityVector.compare(VectorOperators.EQ, hashInput).allTrue()) {
+                node = node.getNext();
+            }
+            else {
+                return node;
+            }
+        }
+
+        byte[] city = new byte[SPECIES.length()];
+        hashInput.reinterpretAsBytes().intoArray(city, 0, hashMask);
+        CalculateAverage_tkowalcz.StatisticsAggregate result = new CalculateAverage_tkowalcz.StatisticsAggregate(
+                city,
+                hashMask.trueCount(),
+                (short) sequence.getAndIncrement());
+        realAggregates.add(result);
+        return startingNode.attachLast(result);
+    }
+
+    private static String toString(Vector<Byte> data) {
+        byte[] array = data.reinterpretAsBytes().toArray();
+        return new String(array, StandardCharsets.UTF_8);
+    }
+
     // histogram = [0, 34737800, 213091910, 2136860, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
-    // Jayapura;-5.3\Detroit;7.9\Las Ve
-    // ........T............T.......... == ;
-    // ........TTTTTT.......TTTTT...... <= ;
-    // .........TTTTT........TTTT...... < ;
-    // .............T...........T...... == \n
-    // compress
-    // -5.3\7.9\
+    // London;14.6\Upington;20.4\Palerm
+    // ......T.............T........... == ;
+    // ......TTTTTT........TTTTTT...... <= ;
+    // .......TTTTT.........TTTTT...... < ;
+    // ...........T.............T...... == \n
     //
-    // Jayapura;-5.3\Detroit;7.9\Las Ve
-    // .........TTTTT........TTTT...... < ;
-    // .............T...........T...... == \n
+    // London;14.6\Upington;20.4\Palerm
+    // .......TTTTT.........TTTTT...... < ;
+    // ...........T.............T...... == \n
     @Benchmark
     public float backToTheDrawingBoard_aligned() {
+        AtomicInteger sequence = new AtomicInteger();
+        List<CalculateAverage_tkowalcz.StatisticsAggregate> realAggregates = new ArrayList<>();
+
         long offset = 0;
         long end = inputData.byteSize() - 2 * SPECIES.length();
 
@@ -130,18 +176,38 @@ public class BTDB_Stats_Microbenchmark {
         float loopIterations = 0;
         while (offset < end) {
             Vector<Byte> byteVector1 = SPECIES.fromMemorySegment(inputData, offset, ByteOrder.nativeOrder());
-            VectorMask<Byte> vectorMask = byteVector1.compare(VectorOperators.LT, SEMICOLON_VECTOR);
-            int firstDelimiter1 = vectorMask.firstTrue();
+            VectorMask<Byte> vectorMask = byteVector1.compare(VectorOperators.EQ, SEMICOLON_VECTOR);
+            int firstDelimiter1 = vectorMask.firstTrue() + 1;
 
             VectorMask<Byte> hashMask1 = CITY_LOOKUP_MASK[firstDelimiter1];
             Vector<Byte> hashInput1 = ZERO.blend(byteVector1, hashMask1);
 
             int perfectHash32_1 = hashInput1.reinterpretAsInts().reduceLanes(VectorOperators.ADD);
             int index1 = perfectHash32_1 & TABLE_SIZE_MASK;
-//            citiesMap[index1 << 5];
+            CalculateAverage_tkowalcz.StatisticsAggregate statisticsAggregate_1 = dataTable[index1];
+            if (statisticsAggregate_1 == null) {
+                byte[] city = new byte[SPECIES.length()];
+                hashInput1.reinterpretAsBytes().intoArray(city, 0, hashMask1);
+
+                statisticsAggregate_1 = new CalculateAverage_tkowalcz.StatisticsAggregate(
+                        city,
+                        hashMask1.trueCount(),
+                        (short) sequence.getAndIncrement());
+
+                realAggregates.add(statisticsAggregate_1);
+                dataTable[index1] = statisticsAggregate_1;
+            }
+            else {
+                ByteVector cityVector = ByteVector.fromArray(ByteVector.SPECIES_256, statisticsAggregate_1.getCity(), 0);
+                if (!cityVector.compare(VectorOperators.EQ, hashInput1).allTrue()) {
+                    // Very slow path: linked list of collisions
+                    statisticsAggregate_1 = findCityInChain(statisticsAggregate_1, hashInput1, hashMask1, sequence, realAggregates);
+                }
+            }
 
             VectorMask<Byte> mask1 = byteVector1.compare(VectorOperators.LT, ASCII_ZERO);
-            int lookupIndex1 = (int) ((mask1.toLong() >> firstDelimiter1) & 0x0F);
+            long l = mask1.toLong() >> firstDelimiter1;
+            int lookupIndex1 = (int) (l & 0x07);
 
             long value = byteVector1
                     .sub(ASCII_ZERO)
@@ -149,38 +215,43 @@ public class BTDB_Stats_Microbenchmark {
                     .mul(STOI_MUL_LOOKUP[lookupIndex1])
                     .reduceLanesToLong(VectorOperators.ADD);
 
-//            offset1 += STOI_SIZE_LOOKUP[lookupIndex1];
+            offset += firstDelimiter1 + STOI_SIZE_LOOKUP[lookupIndex1];
 
-            loopIterations++;
-            int trueCount = vectorMask.trueCount();
-            histogram[trueCount]++;
+            //
+            // loopIterations++;
+            // int trueCount = vectorMask.trueCount();
+            // histogram[trueCount]++;
+            //
+            // if (trueCount == 0) {
+            // offset += SPECIES.length();
+            // } else {
+            // trueCountSum += trueCount;
+            // offset += vectorMask.lastTrue() + 1;
+            // }
 
-            if (trueCount == 0) {
-                offset += SPECIES.length();
-            } else {
-                trueCountSum += trueCount;
-                offset += vectorMask.lastTrue() + 1;
-            }
-
-//            System.out.println("offset = " + offset);
-//            offset += SPECIES.length();
+            // System.out.println("offset = " + offset);
+            // offset += SPECIES.length();
         }
 
-        System.out.println("avg newlines count = " + (trueCountSum / loopIterations));
-        System.out.println("histogram = " + Arrays.toString(histogram));
+        // System.out.println(realAggregates
+        // .stream()
+        // .map(statisticsAggregate -> statisticsAggregate.cityAsString() + ": " + statisticsAggregate.getCityId())
+        // .collect(Collectors.joining("\n"))
+        // );
+        //
         return trueCountSum;
     }
 
     private static MemorySegment mmapDataFile(String fileName, Arena arena) throws IOException {
         try (RandomAccessFile file = new RandomAccessFile(fileName, "r");
-             FileChannel channel = file.getChannel()) {
+                FileChannel channel = file.getChannel()) {
             return channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size(), arena);
         }
     }
 
     private static MemoryMappedFile mmapDataFile(String fileName) throws IOException {
         try (RandomAccessFile file = new RandomAccessFile(fileName, "r");
-             FileChannel channel = file.getChannel()) {
+                FileChannel channel = file.getChannel()) {
             long pointer = IoUtil.map(channel, FileChannel.MapMode.READ_ONLY, 0, channel.size());
             return new MemoryMappedFile(
                     pointer,
@@ -192,10 +263,10 @@ public class BTDB_Stats_Microbenchmark {
     }
 
     public static void main(String[] args) throws RunnerException {
-        Class<? extends Profiler> profilerClass = LinuxPerfProfiler.class;
-//        Class<? extends Profiler> profilerClass = AsyncProfiler.class;
-//        Class<? extends Profiler> profilerClass = LinuxPerfNormProfiler.class;
-        // Class<? extends Profiler> profilerClass = LinuxPerfAsmProfiler.class;
+        // Class<? extends Profiler> profilerClass = LinuxPerfProfiler.class;
+        // Class<? extends Profiler> profilerClass = AsyncProfiler.class;
+        // Class<? extends Profiler> profilerClass = LinuxPerfNormProfiler.class;
+        Class<? extends Profiler> profilerClass = LinuxPerfAsmProfiler.class;
 
         Options opt = new OptionsBuilder()
                 .include(BTDB_Stats_Microbenchmark.class.getSimpleName())

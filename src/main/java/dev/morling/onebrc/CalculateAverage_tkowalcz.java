@@ -26,6 +26,7 @@ import java.lang.foreign.ValueLayout;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Function;
@@ -67,20 +68,15 @@ public class CalculateAverage_tkowalcz {
     // measurement with ASCII_ZERO. Hence, only four entries are populated.
     private static final ShortVector[] STOI_MUL_LOOKUP = {
             ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
+            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 0, -100, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
+            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
             ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
             ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 100, 10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 0, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 0, -100, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0)
+            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 0, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0)
     };
 
     // We also need to know the size of temperature measurement in characters, lookup table works the same way as STOI_MUL_LOOKUP.
-    private static final int[] STOI_SIZE_LOOKUP = { 0, 0, 0, 0, 5, 5, 0, 0, 0, 6, 4 };
+    private static final int[] STOI_SIZE_LOOKUP = { 0, 6, 4, 0, 5, 5 };
 
     // We will use very large table for hash map to reduce collisions. There is little downside in increasing it as
     // we pay only cost of a reference (so 0x400000 size uses 32m of memory * thread count).
@@ -91,7 +87,7 @@ public class CalculateAverage_tkowalcz {
 
     public static void main(String[] args) throws IOException, InterruptedException, ExecutionException {
         Arena arena = Arena.ofShared();
-        int availableProcessors = Runtime.getRuntime().availableProcessors();
+        int availableProcessors = 8;// Runtime.getRuntime().availableProcessors();
 
         MemorySegment inputData = mmapDataFile(FILE, arena);
         List<MemorySegment> memorySegments = divideAlongNewlines(inputData, availableProcessors);
@@ -192,6 +188,7 @@ public class CalculateAverage_tkowalcz {
 
         while (offset1 < end1 && offset2 < end2) {
             Vector<Byte> byteVector1 = SPECIES.fromMemorySegment(inputData, offset1, ByteOrder.nativeOrder());
+            // System.out.println(toString(byteVector1));
             int firstDelimiter1 = byteVector1.compare(VectorOperators.EQ, DELIMITER_VECTOR).firstTrue();
             offset1 += firstDelimiter1 + 1;
 
@@ -223,7 +220,7 @@ public class CalculateAverage_tkowalcz {
                 ByteVector cityVector = ByteVector.fromArray(ByteVector.SPECIES_256, statisticsAggregate_1.getCity(), 0);
                 if (!cityVector.compare(VectorOperators.EQ, hashInput1).allTrue()) {
                     // Very slow path: linked list of collisions
-                    statisticsAggregate_1 = findCityInChain(statisticsAggregate_1, hashInput1, hashMask1);
+                    // statisticsAggregate_1 = findCityInChain(statisticsAggregate_1, hashInput1, hashMask1);
                 }
             }
 
@@ -251,31 +248,32 @@ public class CalculateAverage_tkowalcz {
                 ByteVector cityVector = ByteVector.fromArray(ByteVector.SPECIES_256, statisticsAggregate_2.getCity(), 0);
                 if (!cityVector.compare(VectorOperators.EQ, hashInput2).allTrue()) {
                     // Very slow path: linked list of collisions
-                    statisticsAggregate_2 = findCityInChain(statisticsAggregate_2, hashInput2, hashMask2);
+                    // statisticsAggregate_2 = findCityInChain(statisticsAggregate_2, hashInput2, hashMask2);
                 }
             }
 
-            byteVector1 = SPECIES.fromMemorySegment(inputData, offset1, ByteOrder.nativeOrder());
+            // byteVector1 = SPECIES.fromMemorySegment(inputData, offset1, ByteOrder.nativeOrder());
             VectorMask<Byte> mask1 = byteVector1.compare(VectorOperators.LT, ASCII_ZERO);
-            int lookupIndex1 = (int) (mask1.toLong() & 0x0F);
+            int lookupIndex1 = (int) ((mask1.toLong() >> (firstDelimiter1 + 1)) & 0x07);
 
             long value = byteVector1
                     .sub(ASCII_ZERO)
                     .castShape(ShortVector.SPECIES_256, 0)
-                    .mul(STOI_MUL_LOOKUP[lookupIndex1])
+                    // .mul(STOI_MUL_LOOKUP[lookupIndex1])
                     .reduceLanesToLong(VectorOperators.ADD);
 
             statisticsAggregate_1.accept(value);
             offset1 += STOI_SIZE_LOOKUP[lookupIndex1];
+            // System.out.println(offset1);
 
-            byteVector2 = SPECIES.fromMemorySegment(inputData, offset2, ByteOrder.nativeOrder());
+            // byteVector2 = SPECIES.fromMemorySegment(inputData, offset2, ByteOrder.nativeOrder());
             VectorMask<Byte> mask2 = byteVector2.compare(VectorOperators.LT, ASCII_ZERO);
-            int lookupIndex2 = (int) (mask2.toLong() & 0x0F);
+            int lookupIndex2 = (int) ((mask2.toLong() >> (firstDelimiter2 + 1)) & 0x07);
 
             value = byteVector2
                     .sub(ASCII_ZERO)
                     .castShape(ShortVector.SPECIES_256, 0)
-                    .mul(STOI_MUL_LOOKUP[lookupIndex2])
+                    // .mul(STOI_MUL_LOOKUP[lookupIndex2])
                     .reduceLanesToLong(VectorOperators.ADD);
 
             statisticsAggregate_2.accept(value);
@@ -319,18 +317,18 @@ public class CalculateAverage_tkowalcz {
                 ByteVector cityVector = ByteVector.fromArray(ByteVector.SPECIES_256, statisticsAggregate_1.getCity(), 0);
                 if (!cityVector.compare(VectorOperators.EQ, hashInput1).allTrue()) {
                     // Very slow path: linked list of collisions
-                    statisticsAggregate_1 = findCityInChain(statisticsAggregate_1, hashInput1, hashMask1);
+                    // statisticsAggregate_1 = findCityInChain(statisticsAggregate_1, hashInput1, hashMask1);
                 }
             }
 
-            byteVector1 = SPECIES.fromMemorySegment(inputData, offset1, ByteOrder.nativeOrder());
+            // byteVector1 = SPECIES.fromMemorySegment(inputData, offset1, ByteOrder.nativeOrder());
             VectorMask<Byte> mask1 = byteVector1.compare(VectorOperators.LT, ASCII_ZERO);
-            int lookupIndex1 = (int) (mask1.toLong() & 0x0F);
+            int lookupIndex1 = (int) ((mask1.toLong() >> (firstDelimiter1 + 1)) & 0x07);
 
             long value = byteVector1
                     .sub(ASCII_ZERO)
                     .castShape(ShortVector.SPECIES_256, 0)
-                    .mul(STOI_MUL_LOOKUP[lookupIndex1])
+                    // .mul(STOI_MUL_LOOKUP[lookupIndex1])
                     .reduceLanesToLong(VectorOperators.ADD);
 
             statisticsAggregate_1.accept(value);
@@ -341,7 +339,7 @@ public class CalculateAverage_tkowalcz {
     }
 
     private static List<StatisticsAggregate> filterEmptyEntries(StatisticsAggregate[] dataTable) {
-        List<StatisticsAggregate> result = new ArrayList<>();
+        List<StatisticsAggregate> result = new ArrayList<>(500);
         for (StatisticsAggregate statisticsAggregate : dataTable) {
             if (statisticsAggregate != null) {
                 result.add(statisticsAggregate);
@@ -421,6 +419,7 @@ public class CalculateAverage_tkowalcz {
         private final byte[] city;
         private final int cityLength;
 
+        private final short cityId;
         private long min = Long.MAX_VALUE;
         private long max = Long.MIN_VALUE;
 
@@ -429,13 +428,24 @@ public class CalculateAverage_tkowalcz {
 
         private StatisticsAggregate next;
 
+        public StatisticsAggregate(byte[] city, int cityLength, short cityId) {
+            this.city = city;
+            this.cityLength = cityLength;
+            this.cityId = cityId;
+        }
+
         public StatisticsAggregate(byte[] city, int cityLength) {
             this.city = city;
             this.cityLength = cityLength;
+            this.cityId = 0;
         }
 
         public byte[] getCity() {
             return city;
+        }
+
+        public short getCityId() {
+            return cityId;
         }
 
         public String cityAsString() {
