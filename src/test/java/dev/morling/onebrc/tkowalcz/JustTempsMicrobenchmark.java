@@ -32,14 +32,14 @@ import java.util.concurrent.TimeUnit;
         "-XX:+UnlockExperimentalVMOptions",
         "-server",
         "-XX:-TieredCompilation",
-//        "-XX:+AlwaysPreTouch",
+        // "-XX:+AlwaysPreTouch",
         "-XX:+EnableVectorReboxing",
         "-XX:+EnableVectorAggressiveReboxing",
         "-XX:+TrustFinalNonStaticFields",
-//        "-XX:InlineSmallCode=10000",
-//        "-XX:CompileThreshold=2",
-//         "-XX:+PrintCompilation",
-//        "-XX:+PrintInlining",
+        // "-XX:InlineSmallCode=10000",
+        // "-XX:CompileThreshold=2",
+        // "-XX:+PrintCompilation",
+        // "-XX:+PrintInlining",
         "-XX:+UseEpsilonGC",
         "-XX:CompileCommand=inline dev.morling.onebrc.tkowalczLocalPermuteMicrobenchmark::computeIfAbsent",
         "-Djdk.incubator.vector.VECTOR_ACCESS_OOB_CHECK=0",
@@ -59,12 +59,12 @@ public class JustTempsMicrobenchmark {
     // There are four combinations of possible mask results from comparing (less than) vector containing temperature
     // measurement with ASCII_ZERO. Hence, only four entries are populated.
     private static final ShortVector[] STOI_MUL_LOOKUP = {
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0),
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{0, -100, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0),
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0),
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0),
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{100, 10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0),
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{0, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0)
+            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
+            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 0, -100, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
+            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
+            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
+            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 100, 10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
+            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 0, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0)
     };
 
     private static final VectorShuffle<Byte>[] TEMP_SHUFFLE = new VectorShuffle[]{
@@ -77,7 +77,7 @@ public class JustTempsMicrobenchmark {
     };
 
     // We also need to know the size of temperature measurement in characters, lookup table works the same way as STOI_MUL_LOOKUP.
-    private static final int[] STOI_SIZE_LOOKUP = {0, 6, 4, 0, 5, 5};
+    private static final int[] STOI_SIZE_LOOKUP = { 0, 6, 4, 0, 5, 5 };
 
     private static final String FILE = "measurements.txt";
 
@@ -105,7 +105,8 @@ public class JustTempsMicrobenchmark {
             hashMapData = arena.allocate(10_000 * (4 + 100 + 28));
             hashMapDataWriteIndex = 4;
             sequence = 0;
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -138,19 +139,19 @@ public class JustTempsMicrobenchmark {
         long offset2 = stride;
         long end2 = stride + stride - SPECIES.vectorByteSize();
 
-//        long offset3 = stride + stride;
-//        long end3 = stride + stride + stride - SPECIES.vectorByteSize();
-//
-//        long offset4 = stride + stride + stride;
-//        long end4 = stride + stride + stride + stride - SPECIES.vectorByteSize();
+        // long offset3 = stride + stride;
+        // long end3 = stride + stride + stride - SPECIES.vectorByteSize();
+        //
+        // long offset4 = stride + stride + stride;
+        // long end4 = stride + stride + stride + stride - SPECIES.vectorByteSize();
 
         offset1 = fastFroward(offset1);
         offset2 = fastFroward(offset2);
-//        offset3 = fastFroward(offset3);
-//        offset4 = fastFroward(offset4);
+        // offset3 = fastFroward(offset3);
+        // offset4 = fastFroward(offset4);
 
         long result = 0;
-        while (offset1 < end1 && offset2 < end2 /* && offset3 < end3 && offset4 < end4*/) {
+        while (offset1 < end1 && offset2 < end2 /* && offset3 < end3 && offset4 < end4 */) {
             Vector<Byte> byteVector1 = SPECIES.fromMemorySegment(inputData, offset1, ByteOrder.nativeOrder());
             int firstDelimiter1 = byteVector1.compare(VectorOperators.EQ, DELIMITER_VECTOR).firstTrue();
             if (firstDelimiter1 == 0) {
@@ -167,23 +168,23 @@ public class JustTempsMicrobenchmark {
                 firstDelimiter2 = byteVector2.compare(VectorOperators.EQ, DELIMITER_VECTOR).firstTrue();
             }
 
-//            Vector<Byte> byteVector3 = SPECIES.fromMemorySegment(inputData, offset3, ByteOrder.nativeOrder());
-//            int firstDelimiter3 = byteVector3.compare(VectorOperators.EQ, DELIMITER_VECTOR).firstTrue();
-//            if (firstDelimiter3 == 0) {
-//                offset3 = fastFroward(offset3);
-//                byteVector3 = SPECIES.fromMemorySegment(inputData, offset3, ByteOrder.nativeOrder());
-//                firstDelimiter3 = byteVector3.compare(VectorOperators.EQ, DELIMITER_VECTOR).firstTrue();
-//            }
-//
-//            Vector<Byte> byteVector4 = SPECIES.fromMemorySegment(inputData, offset4, ByteOrder.nativeOrder());
-//            int firstDelimiter4 = byteVector4.compare(VectorOperators.EQ, DELIMITER_VECTOR).firstTrue();
-//            if (firstDelimiter4 == 0) {
-//                offset4 = fastFroward(offset4);
-//                byteVector4 = SPECIES.fromMemorySegment(inputData, offset4, ByteOrder.nativeOrder());
-//                firstDelimiter4 = byteVector4.compare(VectorOperators.EQ, DELIMITER_VECTOR).firstTrue();
-//            }
+            // Vector<Byte> byteVector3 = SPECIES.fromMemorySegment(inputData, offset3, ByteOrder.nativeOrder());
+            // int firstDelimiter3 = byteVector3.compare(VectorOperators.EQ, DELIMITER_VECTOR).firstTrue();
+            // if (firstDelimiter3 == 0) {
+            // offset3 = fastFroward(offset3);
+            // byteVector3 = SPECIES.fromMemorySegment(inputData, offset3, ByteOrder.nativeOrder());
+            // firstDelimiter3 = byteVector3.compare(VectorOperators.EQ, DELIMITER_VECTOR).firstTrue();
+            // }
+            //
+            // Vector<Byte> byteVector4 = SPECIES.fromMemorySegment(inputData, offset4, ByteOrder.nativeOrder());
+            // int firstDelimiter4 = byteVector4.compare(VectorOperators.EQ, DELIMITER_VECTOR).firstTrue();
+            // if (firstDelimiter4 == 0) {
+            // offset4 = fastFroward(offset4);
+            // byteVector4 = SPECIES.fromMemorySegment(inputData, offset4, ByteOrder.nativeOrder());
+            // firstDelimiter4 = byteVector4.compare(VectorOperators.EQ, DELIMITER_VECTOR).firstTrue();
+            // }
 
-            VectorShuffle<Byte> shuffle = VectorShuffle.fromValues(ByteVector.SPECIES_256, );
+            // VectorShuffle<Byte> shuffle = VectorShuffle.fromValues(ByteVector.SPECIES_256, );
 
             VectorMask<Byte> mask1 = byteVector1.compare(VectorOperators.LT, ASCII_ZERO);
             int lookupIndex1 = (int) mask1.toLong() & 0x07;
@@ -201,27 +202,27 @@ public class JustTempsMicrobenchmark {
                     .mul(STOI_MUL_LOOKUP[lookupIndex2])
                     .reduceLanesToLong(VectorOperators.ADD);
 
-//            VectorMask<Byte> mask3 = byteVector3.compare(VectorOperators.LT, ASCII_ZERO);
-//            int lookupIndex3 = (int) mask3.toLong() & 0x07;
-//            long value3 = byteVector3
-//                    .sub(ASCII_ZERO)
-//                    .castShape(ShortVector.SPECIES_256, 0)
-//                    .mul(STOI_MUL_LOOKUP[lookupIndex3])
-//                    .reduceLanesToLong(VectorOperators.ADD);
-//
-//            VectorMask<Byte> mask4 = byteVector4.compare(VectorOperators.LT, ASCII_ZERO);
-//            int lookupIndex4 = (int) mask4.toLong() & 0x07;
-//            long value4 = byteVector4
-//                    .sub(ASCII_ZERO)
-//                    .castShape(ShortVector.SPECIES_256, 0)
-//                    .mul(STOI_MUL_LOOKUP[lookupIndex4])
-//                    .reduceLanesToLong(VectorOperators.ADD);
+            // VectorMask<Byte> mask3 = byteVector3.compare(VectorOperators.LT, ASCII_ZERO);
+            // int lookupIndex3 = (int) mask3.toLong() & 0x07;
+            // long value3 = byteVector3
+            // .sub(ASCII_ZERO)
+            // .castShape(ShortVector.SPECIES_256, 0)
+            // .mul(STOI_MUL_LOOKUP[lookupIndex3])
+            // .reduceLanesToLong(VectorOperators.ADD);
+            //
+            // VectorMask<Byte> mask4 = byteVector4.compare(VectorOperators.LT, ASCII_ZERO);
+            // int lookupIndex4 = (int) mask4.toLong() & 0x07;
+            // long value4 = byteVector4
+            // .sub(ASCII_ZERO)
+            // .castShape(ShortVector.SPECIES_256, 0)
+            // .mul(STOI_MUL_LOOKUP[lookupIndex4])
+            // .reduceLanesToLong(VectorOperators.ADD);
 
-            result += value1 + value2 /*+ value3 + value4*/;
+            result += value1 + value2 /* + value3 + value4 */;
             offset1 += firstDelimiter1 + 1;
             offset2 += firstDelimiter2 + 1;
-//            offset3 += firstDelimiter3 + 1;
-//            offset4 += firstDelimiter4 + 1;
+            // offset3 += firstDelimiter3 + 1;
+            // offset4 += firstDelimiter4 + 1;
         }
 
         return result;
@@ -249,7 +250,7 @@ public class JustTempsMicrobenchmark {
         offset4 = fastFroward(offset4);
 
         long result = 0;
-        while (offset1 < end1 && offset2 < end2 /* && offset3 < end3 && offset4 < end4*/) {
+        while (offset1 < end1 && offset2 < end2 /* && offset3 < end3 && offset4 < end4 */) {
             Vector<Byte> byteVector1 = SPECIES.fromMemorySegment(inputData, offset1, ByteOrder.nativeOrder());
             int firstDelimiter1 = byteVector1.compare(VectorOperators.EQ, DELIMITER_VECTOR).firstTrue();
             if (firstDelimiter1 == 0) {
@@ -305,8 +306,7 @@ public class JustTempsMicrobenchmark {
                     .castShape(ShortVector.SPECIES_256, 0)
                     .mul(STOI_MUL_LOOKUP[lookupIndex1]);
 
-
-            result += value1 + value2 + value3 + value4;
+            // result += value1 + value2 + value3 + value4;
             offset1 += firstDelimiter1 + 1;
             offset2 += firstDelimiter2 + 1;
             offset3 += firstDelimiter3 + 1;
@@ -362,14 +362,14 @@ public class JustTempsMicrobenchmark {
 
     private static MemorySegment mmapDataFile(String fileName, Arena arena) throws IOException {
         try (RandomAccessFile file = new RandomAccessFile(fileName, "r");
-             FileChannel channel = file.getChannel()) {
+                FileChannel channel = file.getChannel()) {
             return channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size(), arena);
         }
     }
 
     private static MemoryMappedFile mmapDataFile(String fileName) throws IOException {
         try (RandomAccessFile file = new RandomAccessFile(fileName, "r");
-             FileChannel channel = file.getChannel()) {
+                FileChannel channel = file.getChannel()) {
             long pointer = IoUtil.map(channel, FileChannel.MapMode.READ_ONLY, 0, channel.size());
             return new MemoryMappedFile(
                     pointer,
@@ -381,11 +381,11 @@ public class JustTempsMicrobenchmark {
     }
 
     public static void main(String[] args) throws RunnerException {
-//        Class<? extends Profiler> profilerClass = LinuxPerfProfiler.class;
-//        Class<? extends Profiler> profilerClass = AsyncProfiler.class;
+        // Class<? extends Profiler> profilerClass = LinuxPerfProfiler.class;
+        // Class<? extends Profiler> profilerClass = AsyncProfiler.class;
         // Class<? extends Profiler> profilerClass = LinuxPerfNormProfiler.class;
         Class<? extends Profiler> profilerClass = LinuxPerfAsmProfiler.class;
-//        Class<? extends Profiler> profilerClass = JavaFlightRecorderProfiler.class;
+        // Class<? extends Profiler> profilerClass = JavaFlightRecorderProfiler.class;
 
         Options opt = new OptionsBuilder()
                 .include(JustTempsMicrobenchmark.class.getSimpleName())
@@ -393,7 +393,7 @@ public class JustTempsMicrobenchmark {
                 .measurementIterations(2)
                 .resultFormat(ResultFormatType.CSV)
                 .jvmArgsAppend("--add-modules", "jdk.incubator.vector")
-                .addProfiler(profilerClass)//, "libPath=/root/libasyncProfiler.so;output=flamegraph;dir=profile-results")
+                .addProfiler(profilerClass)// , "libPath=/root/libasyncProfiler.so;output=flamegraph;dir=profile-results")
                 .build();
 
         new Runner(opt).run();
