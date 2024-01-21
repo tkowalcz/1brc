@@ -86,6 +86,8 @@ public class CalculateAverage_tkowalcz {
     public static final int TABLE_SIZE_MASK = 0x400000 - 1;
 
     public static void main(String[] args) throws IOException, InterruptedException, ExecutionException {
+//        try (Arena arena = Arena.ofShared()) {
+        long start = System.nanoTime();
         Arena arena = Arena.ofShared();
         int availableProcessors = 8;// Runtime.getRuntime().availableProcessors();
 
@@ -111,6 +113,13 @@ public class CalculateAverage_tkowalcz {
         }
 
         System.out.println(results);
+        long runtime = System.nanoTime() - start;
+        System.out.println(STR."Runtime: \{TimeUnit.NANOSECONDS.toMillis(runtime)}ms");
+//        }
+//
+//        if (Boolean.getBoolean("cracMe")) {
+//            Thread.sleep(Duration.ofSeconds(1000));
+//        }
     }
 
     static List<MemorySegment> divideAlongNewlines(MemorySegment inputData, int numberOfParts) {
