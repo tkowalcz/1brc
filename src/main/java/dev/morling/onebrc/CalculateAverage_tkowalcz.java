@@ -229,7 +229,7 @@ public class CalculateAverage_tkowalcz {
                 ByteVector cityVector = ByteVector.fromArray(ByteVector.SPECIES_256, statisticsAggregate_1.getCity(), 0);
                 if (!cityVector.compare(VectorOperators.EQ, hashInput1).allTrue()) {
                     // Very slow path: linked list of collisions
-                    // statisticsAggregate_1 = findCityInChain(statisticsAggregate_1, hashInput1, hashMask1);
+                    statisticsAggregate_1 = findCityInChain(statisticsAggregate_1, hashInput1, hashMask1);
                 }
             }
 
@@ -257,7 +257,7 @@ public class CalculateAverage_tkowalcz {
                 ByteVector cityVector = ByteVector.fromArray(ByteVector.SPECIES_256, statisticsAggregate_2.getCity(), 0);
                 if (!cityVector.compare(VectorOperators.EQ, hashInput2).allTrue()) {
                     // Very slow path: linked list of collisions
-                    // statisticsAggregate_2 = findCityInChain(statisticsAggregate_2, hashInput2, hashMask2);
+                    statisticsAggregate_2 = findCityInChain(statisticsAggregate_2, hashInput2, hashMask2);
                 }
             }
 
@@ -268,7 +268,7 @@ public class CalculateAverage_tkowalcz {
             long value = byteVector1
                     .sub(ASCII_ZERO)
                     .castShape(ShortVector.SPECIES_256, 0)
-                    // .mul(STOI_MUL_LOOKUP[lookupIndex1])
+                    .mul(STOI_MUL_LOOKUP[lookupIndex1])
                     .reduceLanesToLong(VectorOperators.ADD);
 
             statisticsAggregate_1.accept(value);
@@ -282,7 +282,7 @@ public class CalculateAverage_tkowalcz {
             value = byteVector2
                     .sub(ASCII_ZERO)
                     .castShape(ShortVector.SPECIES_256, 0)
-                    // .mul(STOI_MUL_LOOKUP[lookupIndex2])
+                    .mul(STOI_MUL_LOOKUP[lookupIndex2])
                     .reduceLanesToLong(VectorOperators.ADD);
 
             statisticsAggregate_2.accept(value);
@@ -326,7 +326,7 @@ public class CalculateAverage_tkowalcz {
                 ByteVector cityVector = ByteVector.fromArray(ByteVector.SPECIES_256, statisticsAggregate_1.getCity(), 0);
                 if (!cityVector.compare(VectorOperators.EQ, hashInput1).allTrue()) {
                     // Very slow path: linked list of collisions
-                    // statisticsAggregate_1 = findCityInChain(statisticsAggregate_1, hashInput1, hashMask1);
+                    statisticsAggregate_1 = findCityInChain(statisticsAggregate_1, hashInput1, hashMask1);
                 }
             }
 
@@ -337,7 +337,7 @@ public class CalculateAverage_tkowalcz {
             long value = byteVector1
                     .sub(ASCII_ZERO)
                     .castShape(ShortVector.SPECIES_256, 0)
-                    // .mul(STOI_MUL_LOOKUP[lookupIndex1])
+                    .mul(STOI_MUL_LOOKUP[lookupIndex1])
                     .reduceLanesToLong(VectorOperators.ADD);
 
             statisticsAggregate_1.accept(value);
