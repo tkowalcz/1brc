@@ -17,8 +17,8 @@ import java.nio.ByteOrder;
  *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *   |                         City name                             |
  *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *   |  Min  |  Max  |  Sum  |  Len  |                               |
- *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *   |  Min  |  Max  |  Sum  |  Len  |
+ *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  *
  */
 public class RawHashMapUnsafe {
@@ -50,8 +50,13 @@ public class RawHashMapUnsafe {
         int max = UnsafeAccess.UNSAFE.getInt(baseOffset + MAX_OFFSET);
         int sum = UnsafeAccess.UNSAFE.getInt(baseOffset + SUM_OFFSET);
 
-        UnsafeAccess.UNSAFE.putInt(baseOffset + MIN_OFFSET, Math.min(min, value));
-        UnsafeAccess.UNSAFE.putInt(baseOffset + MAX_OFFSET, Math.max(max, value));
+        if (value < min) {
+            UnsafeAccess.UNSAFE.putInt(baseOffset + MIN_OFFSET, value);
+        }
+        if (value > max) {
+            UnsafeAccess.UNSAFE.putInt(baseOffset + MAX_OFFSET, value);
+        }
+
         UnsafeAccess.UNSAFE.putInt(baseOffset + SUM_OFFSET, sum + value);
     }
 }

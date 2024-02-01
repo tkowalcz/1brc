@@ -39,12 +39,12 @@ public class JustCitiesInASmallVectorMicrobenchmark extends OneBrcMicrobenchmark
     // There are four combinations of possible mask results from comparing (less than) vector containing temperature
     // measurement with ASCII_ZERO. Hence, only four entries are populated.
     private static final short[][] STOI_MUL_LOOKUP_TEMPLATE = {
-            new short[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            new short[]{0, 0, -100, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            new short[]{0, 10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            new short[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            new short[]{0, 100, 10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            new short[]{0, 0, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+            new short[]{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+            new short[]{ 0, 0, -100, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+            new short[]{ 0, 10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+            new short[]{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+            new short[]{ 0, 100, 10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+            new short[]{ 0, 0, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
     };
 
     private static final short[] HASH_MUL_LOOKUP_TEMPLATE = {
@@ -87,7 +87,7 @@ public class JustCitiesInASmallVectorMicrobenchmark extends OneBrcMicrobenchmark
     }
 
     // We also need to know the size of temperature measurement in characters, lookup table works the same way as STOI_MUL_LOOKUP.
-    private static final int[] STOI_SIZE_LOOKUP = {0, 6, 4, 0, 5, 5};
+    private static final int[] STOI_SIZE_LOOKUP = { 0, 6, 4, 0, 5, 5 };
 
     private static final String FILE = "measurements.txt";
 
@@ -111,10 +111,11 @@ public class JustCitiesInASmallVectorMicrobenchmark extends OneBrcMicrobenchmark
             output = arena.allocate(5 * 1024 * 1024 * 1024L, 1);
 
             hashMap = new RawHashMapUnsafe(arena);
-//            hashMapData = arena.allocate(10_000 * (4 + 100 + 28));
-//            hashMapDataWriteIndex = 4;
-//            sequence = 0;
-        } catch (IOException e) {
+            // hashMapData = arena.allocate(10_000 * (4 + 100 + 28));
+            // hashMapDataWriteIndex = 4;
+            // sequence = 0;
+        }
+        catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -342,7 +343,8 @@ public class JustCitiesInASmallVectorMicrobenchmark extends OneBrcMicrobenchmark
             }
 
             offset1++;
-        } else {
+        }
+        else {
             offset1 += newline + 1;
         }
         return offset1;
@@ -350,8 +352,8 @@ public class JustCitiesInASmallVectorMicrobenchmark extends OneBrcMicrobenchmark
 
     public static void main(String[] args) throws RunnerException {
         // runWithJFR(JustCitiesInASmallVectorMicrobenchmark.class.getSimpleName());
-//        run(JustCitiesInASmallVectorMicrobenchmark.class.getSimpleName());
-         runWithPerfAsm(JustCitiesInASmallVectorMicrobenchmark.class.getSimpleName());
-//        runWithPerfNorm(JustCitiesInASmallVectorMicrobenchmark.class.getSimpleName());
+        // run(JustCitiesInASmallVectorMicrobenchmark.class.getSimpleName());
+        runWithPerfAsm(JustCitiesInASmallVectorMicrobenchmark.class.getSimpleName());
+        // runWithPerfNorm(JustCitiesInASmallVectorMicrobenchmark.class.getSimpleName());
     }
 }

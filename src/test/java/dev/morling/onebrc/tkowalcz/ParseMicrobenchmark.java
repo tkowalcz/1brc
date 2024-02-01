@@ -17,7 +17,6 @@ package dev.morling.onebrc.tkowalcz;
 
 import jdk.incubator.vector.*;
 import org.openjdk.jmh.annotations.*;
-import org.openjdk.jmh.profile.JavaFlightRecorderProfiler;
 import org.openjdk.jmh.profile.LinuxPerfAsmProfiler;
 import org.openjdk.jmh.profile.Profiler;
 import org.openjdk.jmh.results.format.ResultFormatType;
@@ -153,19 +152,12 @@ public class ParseMicrobenchmark {
     // .reduceLanesToLong(VectorOperators.ADD);
     // }
 
-    // @Benchmark
+    @Benchmark
+    @CompilerControl(CompilerControl.Mode.DONT_INLINE)
     public long parseVectorised() {
-        Vector<Byte> vector = ByteVector.fromArray(
-                ByteVector.SPECIES_256, value, 9);
+        ByteVector vector = ByteVector.fromArray(ByteVector.SPECIES_256, value, 9);
 
-        VectorMask<Byte> mask = vector.compare(VectorOperators.LT, ASCII_ZERO);
-        int lookupIndex = (int) (mask.toLong() & 0x0F);
-
-        return vector
-                .sub(ASCII_ZERO)
-                .castShape(ShortVector.SPECIES_256, 0)
-                .mul(STOI_MUL_LOOKUP[lookupIndex])
-                .reduceLanesToLong(VectorOperators.ADD);
+        return vector.lane(0) + vector.lane(1) + vector.lane(2) + vector.lane(3) + vector.lane(4);
     }
 
     // @Benchmark
@@ -279,7 +271,7 @@ public class ParseMicrobenchmark {
     // 00 -01 -02 -03 | 00 01 02 03 | 00 00 02 03 | 00 00 -02 -03
     // 0 100 10 1
     //
-    @Benchmark
+    // @Benchmark
     public long parseBinaryCodedDecimal() {
         ShortVector shortVector = ShortVector.fromArray(ShortVector.SPECIES_256, shortData1, 0)
                 .mul(ATOI_MUL);

@@ -49,14 +49,15 @@ public class CalculateAverage2Microbenchmark extends OneBrcMicrobenchmark {
             inputData = mmapDataFile(FILE, arena);
 
             hashMap = new CalculateAverage_tkowalcz2.RawHashMap2(arena);
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Setup(Level.Invocation)
     public void clearMap() {
-//            hashMap.clear();
+        // hashMap.clear();
     }
 
     @Benchmark
@@ -87,6 +88,6 @@ public class CalculateAverage2Microbenchmark extends OneBrcMicrobenchmark {
 
     public static void main(String[] args) throws RunnerException {
         runWithPerfAsm(CalculateAverage2Microbenchmark.class.getSimpleName());
-//         runWithJFR(CalculateAverage2Microbenchmark.class.getSimpleName());
+        // runWithJFR(CalculateAverage2Microbenchmark.class.getSimpleName());
     }
 }

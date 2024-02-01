@@ -30,22 +30,22 @@ import java.util.concurrent.TimeUnit;
         "-XX:+DebugNonSafepoints",
         "-XX:+EnableVectorReboxing",
         "-XX:+EnableVectorAggressiveReboxing",
-        "-XX:+UseEpsilonGC",
+        // "-XX:+UseEpsilonGC",
         "-XX:-UseCompressedOops",
-//        "-XX:+PrintInlining",
+        // "-XX:+PrintInlining",
         // "-XX:-UseCompressedClassPointers",
         "-Djdk.incubator.vector.VECTOR_ACCESS_OOB_CHECK=0",
         // "-XX:+HeapDumpOnOutOfMemoryError",
-//        "-XX:MaxDirectMemorySize=12884901888",
-//         "-XX:CompileCommand=dontinline,dev.morling.onebrc.tkowalcz.CalculateAverage_tkowalcz2::hashMiss",
-//         "-XX:CompileCommand=dontinline,dev.morling.onebrc.tkowalcz.CalculateAverage_tkowalcz2.RawHashMap::aggregateMinMaxSum",
-//        "-XX:CompileCommand=inline,dev.morling.onebrc.tkowalcz.CalculateAverage_tkowalcz2::getCityId",
-//        "-XX:CompileCommand=dontinline,dev.morling.onebrc.tkowalcz.DivideAndConquerMicrobenchmark::process",
-//        "-XX:CompileCommand=dontinline,dev.morling.onebrc.tkowalcz.JustTempsInaSmallVectorMicrobenchmark::process",
-//        "-XX:CompileCommand=dontinline,dev.morling.onebrc.tkowalcz.JustCitiesInASmallVectorMicrobenchmark::process",
-//        "-XX:CompileCommand=inline,dev.morling.onebrc.tkowalcz.JustCitiesInASmallVectorMicrobenchmark::processVector",
-        "-Xmx16g",
-        "-Xms16g",
+        // "-XX:MaxDirectMemorySize=12884901888",
+        // "-XX:CompileCommand=dontinline,dev.morling.onebrc.tkowalcz.CalculateAverage_tkowalcz2::hashMiss",
+        // "-XX:CompileCommand=dontinline,dev.morling.onebrc.tkowalcz.CalculateAverage_tkowalcz2.RawHashMap::aggregateMinMaxSum",
+        // "-XX:CompileCommand=inline,dev.morling.onebrc.tkowalcz.CalculateAverage_tkowalcz2::getCityId",
+        // "-XX:CompileCommand=dontinline,dev.morling.onebrc.tkowalcz.DivideAndConquerMicrobenchmark::process",
+        // "-XX:CompileCommand=dontinline,dev.morling.onebrc.tkowalcz.JustTempsInaSmallVectorMicrobenchmark::process",
+        // "-XX:CompileCommand=dontinline,dev.morling.onebrc.tkowalcz.JustCitiesInASmallVectorMicrobenchmark::process",
+         "-XX:CompileCommand=inline,dev.morling.onebrc.tkowalcz.CalculateAverage2Unsafe::addMeasurement",
+        "-Xmx8g",
+        "-Xms8g",
         "-XX:-AlwaysPreTouch",
         "-XX:+UseTransparentHugePages",
         "-XX:-TieredCompilation",
@@ -65,14 +65,14 @@ public class OneBrcMicrobenchmark {
 
     static MemorySegment mmapDataFile(String fileName, Arena arena) throws IOException {
         try (RandomAccessFile file = new RandomAccessFile(fileName, "r");
-             FileChannel channel = file.getChannel()) {
+                FileChannel channel = file.getChannel()) {
             return channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size(), arena);
         }
     }
 
     static MemoryMappedFile mmapDataFile(String fileName) throws IOException {
         try (RandomAccessFile file = new RandomAccessFile(fileName, "r");
-             FileChannel channel = file.getChannel()) {
+                FileChannel channel = file.getChannel()) {
             long pointer = IoUtil.map(channel, FileChannel.MapMode.READ_ONLY, 0, channel.size());
             return new MemoryMappedFile(
                     pointer,

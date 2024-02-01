@@ -17,7 +17,6 @@ package dev.morling.onebrc.tkowalcz;
 
 import dev.morling.onebrc.CalculateAverage_tkowalcz;
 import dev.morling.onebrc.CalculateAverage_tkowalcz2Unsafe;
-import dev.morling.onebrc.RawHashMapUnsafe;
 import jdk.incubator.vector.ByteVector;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
@@ -28,6 +27,9 @@ import org.openjdk.jmh.runner.RunnerException;
 import java.io.IOException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Threads(1)
 public class CalculateAverage2UnsafeMicrobenchmark extends OneBrcMicrobenchmark {
@@ -36,7 +38,7 @@ public class CalculateAverage2UnsafeMicrobenchmark extends OneBrcMicrobenchmark 
 
     private Arena arena;
     private MemorySegment inputData;
-    private RawHashMapUnsafe hashMap;
+    private CalculateAverage_tkowalcz2Unsafe.UnsafeRawHashMap hashMap;
 
     @Setup
     public void setup() {
@@ -44,42 +46,31 @@ public class CalculateAverage2UnsafeMicrobenchmark extends OneBrcMicrobenchmark 
             arena = Arena.ofShared();
             inputData = mmapDataFile(FILE, arena);
 
-            hashMap = new RawHashMapUnsafe(arena);
-        } catch (IOException e) {
+            hashMap = new CalculateAverage_tkowalcz2Unsafe.UnsafeRawHashMap(arena);
+        }
+        catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Setup(Level.Invocation)
     public void clearMap() {
-//            hashMap.clear();
+        // hashMap.clear();
     }
 
     @Benchmark
-    public CalculateAverage_tkowalcz2Unsafe.Cursor doublePumped() {
-        long stride = inputData.byteSize() / 3;
+    public List<CalculateAverage_tkowalcz2Unsafe.StatisticsAggregate> doublePumped() {
+        CalculateAverage_tkowalcz2Unsafe.WorkerThread workerThread = new CalculateAverage_tkowalcz2Unsafe.WorkerThread(
+                null,
+                arena,
+                0);
 
-        long offset1 = 0;
-        long end1 = stride - ByteVector.SPECIES_256.vectorByteSize();
-
-        long offset2 = CalculateAverage_tkowalcz.findPastNewline(inputData, end1);
-        long end2 = stride + stride - ByteVector.SPECIES_256.vectorByteSize();
-
-        long offset3 = CalculateAverage_tkowalcz.findPastNewline(inputData, end2);
-        long end3 = stride + stride + stride - ByteVector.SPECIES_256.vectorByteSize();
-
-        return CalculateAverage_tkowalcz2Unsafe.executeDoublePumped(inputData,
-                hashMap,
-                offset1,
-                end1,
-                offset2,
-                end2,
-                offset3,
-                end3);
+        return workerThread.execute(arena, inputData);
     }
 
     public static void main(String[] args) throws RunnerException {
-        run(CalculateAverage2UnsafeMicrobenchmark.class.getSimpleName());
-//         runWithJFR(CalculateAverage2Microbenchmark.class.getSimpleName());
+        runWithPerfAsm(CalculateAverage2UnsafeMicrobenchmark.class.getSimpleName());
+        // runWithJFR(CalculateAverage2Microbenchmark.class.getSimpleName());
+        
     }
 }

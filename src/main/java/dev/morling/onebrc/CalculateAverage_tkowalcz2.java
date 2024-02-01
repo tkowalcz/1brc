@@ -65,16 +65,16 @@ public class CalculateAverage_tkowalcz2 {
     // There are four combinations of possible mask results from comparing (less than) vector containing temperature
     // measurement with ASCII_ZERO. Hence, only four entries are populated.
     private static final ShortVector[] STOI_MUL_LOOKUP = {
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0),
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{0, -100, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0),
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0),
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0),
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{100, 10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0),
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{0, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0)
+            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
+            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 0, -100, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
+            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
+            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
+            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 100, 10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
+            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 0, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0)
     };
 
     // We also need to know the size of temperature measurement in characters, lookup table works the same way as STOI_MUL_LOOKUP.
-    private static final int[] STOI_SIZE_LOOKUP = {0, 6, 4, 0, 5, 5};
+    private static final int[] STOI_SIZE_LOOKUP = { 0, 6, 4, 0, 5, 5 };
 
     // We will use very large table for hash map to reduce collisions. There is little downside in increasing it as
     // we pay only cost of a reference (so 0x400000 size uses 32m of memory * thread count).
@@ -83,7 +83,7 @@ public class CalculateAverage_tkowalcz2 {
     // Mask to calculate "hashCode % TABLE_SIZE" without division (%).
     public static final int TABLE_SIZE_MASK = TABLE_SIZE - 1;
 
-    //    public static final int TABLE_ENTRY_SIZE = 228;
+    // public static final int TABLE_ENTRY_SIZE = 228;
     public static final int TABLE_ENTRY_SIZE = 48;
 
     // public static void main(String[] args) throws IOException, InterruptedException, ExecutionException {
@@ -194,14 +194,14 @@ public class CalculateAverage_tkowalcz2 {
     // }
 
     public static DoubleCursor executeDoublePumped(
-            MemorySegment inputData,
-            RawHashMap2 hashMap,
-            long offset1,
-            long end1,
-            long offset2,
-            long end2,
-            long offset3,
-            long end3) {
+                                                   MemorySegment inputData,
+                                                   RawHashMap2 hashMap,
+                                                   long offset1,
+                                                   long end1,
+                                                   long offset2,
+                                                   long end2,
+                                                   long offset3,
+                                                   long end3) {
 
         while (offset1 < end1 && offset2 < end2 && offset3 < end3) {
             Vector<Byte> byteVector1 = SPECIES.fromMemorySegment(inputData, offset1, ByteOrder.nativeOrder());
@@ -237,7 +237,7 @@ public class CalculateAverage_tkowalcz2 {
 
             int perfectHash32_1 = hashInput1.reinterpretAsInts().reduceLanes(VectorOperators.ADD);
             int index1 = perfectHash32_1 & TABLE_SIZE_MASK;
-//            int cityNameOffset1 = (index1 << 8) + (index1 << 5); // 2715559 - 130346832
+            // int cityNameOffset1 = (index1 << 8) + (index1 << 5); // 2715559 - 130346832
             int cityNameOffset1 = (index1 << 5) + (index1 << 4);
 
             ByteVector cityVector1 = ByteVector.fromMemorySegment(SPECIES, hashMap.hashMapData, cityNameOffset1, ByteOrder.nativeOrder());
@@ -299,13 +299,13 @@ public class CalculateAverage_tkowalcz2 {
     }
 
     private static int hashMiss(RawHashMap2 hashMap, int cityNameOffset, int index, Vector<Byte> hashInput, int delimiterPosition) {
-//        if (cityNameOffset == 0) {
+        // if (cityNameOffset == 0) {
         hashMap.installNewCity(cityNameOffset, delimiterPosition, hashInput);
-//        } else {
-//            index = (index + 1) & TABLE_SIZE_MASK;
-//
-//        }
-//
+        // } else {
+        // index = (index + 1) & TABLE_SIZE_MASK;
+        //
+        // }
+        //
         return cityNameOffset;
     }
 
@@ -382,7 +382,7 @@ public class CalculateAverage_tkowalcz2 {
 
     private static MemorySegment mmapDataFile(String fileName, Arena arena) throws IOException {
         try (RandomAccessFile file = new RandomAccessFile(fileName, "r");
-             FileChannel channel = file.getChannel()) {
+                FileChannel channel = file.getChannel()) {
             return channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size(), arena);
         }
     }
@@ -412,29 +412,29 @@ public class CalculateAverage_tkowalcz2 {
     }
 
     /*
-     *   HashMap entry layout.
-     *   - Each column is a BYTE (not bit).
-     *   - AVX-2 vector is 32 bytes.
-     *   - There are 8 int-s in a vector.
+     * HashMap entry layout.
+     * - Each column is a BYTE (not bit).
+     * - AVX-2 vector is 32 bytes.
+     * - There are 8 int-s in a vector.
      *
-     *    0                   1                   2                   3
-     *    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *   |                         City name                             |
-     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *   |  Size |Samples| Count |                                       |
-     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *   |Sample0|Sample1|Sample2|Sample3|Sample4|Sample5|Sample6|Sample7|
-     *   |                      Samples 08-15                            |
-     *   |                      Samples 16-23                            |
-     *   |                      Samples 24-31                            |
-     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *   |                Min vector containing 8 samples                |
-     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *   |                Max vector containing 8 samples                |
-     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *   |                Sum vector containing 8 samples                |
-     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * 0 1 2 3
+     * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * | City name |
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * | Size |Samples| Count | |
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * |Sample0|Sample1|Sample2|Sample3|Sample4|Sample5|Sample6|Sample7|
+     * | Samples 08-15 |
+     * | Samples 16-23 |
+     * | Samples 24-31 |
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * | Min vector containing 8 samples |
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * | Max vector containing 8 samples |
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * | Sum vector containing 8 samples |
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
      *
      */
     public static class RawHashMap {
@@ -448,19 +448,17 @@ public class CalculateAverage_tkowalcz2 {
         private static final int MAX_VECTOR_OFFSET = MIN_VECTOR_OFFSET + 32;
         private static final int SUM_VECTOR_OFFSET = MAX_VECTOR_OFFSET + 32;
 
-        //        final int[] hashMap;
+        // final int[] hashMap;
         final MemorySegment hashMapData;
 
         public RawHashMap(Arena arena) {
-            hashMapData = arena.allocate(TABLE_SIZE * (
-                            32 // City name
-                                    + 32 // metadata
-                                    + 4 * 32 // Samples
-                                    + 32 // Min vector
-                                    + 32 // Max vector
-                                    + 32 // Sum vector
-                    )
-            );
+            hashMapData = arena.allocate(TABLE_SIZE * (32 // City name
+                    + 32 // metadata
+                    + 4 * 32 // Samples
+                    + 32 // Min vector
+                    + 32 // Max vector
+                    + 32 // Sum vector
+            ));
         }
 
         private void installNewCity(int mapEntryOffset, int delimiterPosition, Vector<Byte> hashInput) {
@@ -468,7 +466,7 @@ public class CalculateAverage_tkowalcz2 {
             hashMapData.set(ValueLayout.JAVA_INT, mapEntryOffset + CITY_NAME_SIZE_OFFSET, delimiterPosition);
         }
 
-        //        public void addMeasurement(int mapEntryOffset, Vector<Byte> value) {
+        // public void addMeasurement(int mapEntryOffset, Vector<Byte> value) {
         public void addMeasurement(int mapEntryOffset, int value) {
             int tempSamplesCount = hashMapData.get(ValueLayout.JAVA_INT, mapEntryOffset + TEMP_SAMPLES_COUNT_OFFSET);
 
@@ -518,23 +516,23 @@ public class CalculateAverage_tkowalcz2 {
     }
 
     /*
-     *   HashMap entry layout.
-     *   - Each column is a BYTE (not bit).
-     *   - AVX-2 vector is 32 bytes.
-     *   - There are 8 int-s in a vector.
+     * HashMap entry layout.
+     * - Each column is a BYTE (not bit).
+     * - AVX-2 vector is 32 bytes.
+     * - There are 8 int-s in a vector.
      *
-     *    0                   1                   2                   3
-     *    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *   |                         City name                             |
-     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *   |  Min  |  Max  |  Sum  |  Len  |                               |
-     *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * 0 1 2 3
+     * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * | City name |
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * | Min | Max | Sum | Len | |
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
      *
      */
     public static class RawHashMap2 {
 
-//        private static final int CITY_NAME_SIZE_OFFSET = 44;
+        // private static final int CITY_NAME_SIZE_OFFSET = 44;
 
         private static final int MIN_OFFSET = 32;
         private static final int MAX_OFFSET = 36;
@@ -543,19 +541,16 @@ public class CalculateAverage_tkowalcz2 {
         final MemorySegment hashMapData;
 
         public RawHashMap2(Arena arena) {
-            hashMapData = arena.allocate(TABLE_SIZE * (
-                            32 // City name
-                                    + 16
-                    )
-            );
+            hashMapData = arena.allocate(TABLE_SIZE * (32 // City name
+                    + 16));
         }
 
         private void installNewCity(int mapEntryOffset, int delimiterPosition, Vector<Byte> hashInput) {
             hashInput.intoMemorySegment(hashMapData, mapEntryOffset, ByteOrder.nativeOrder());
-//            hashMapData.set(ValueLayout.JAVA_INT, mapEntryOffset + CITY_NAME_SIZE_OFFSET, delimiterPosition);
+            // hashMapData.set(ValueLayout.JAVA_INT, mapEntryOffset + CITY_NAME_SIZE_OFFSET, delimiterPosition);
         }
 
-        //        public void addMeasurement(int mapEntryOffset, Vector<Byte> value) {
+        // public void addMeasurement(int mapEntryOffset, Vector<Byte> value) {
         public void addMeasurement(int mapEntryOffset, int value) {
             int min = hashMapData.get(ValueLayout.JAVA_INT, mapEntryOffset + MIN_OFFSET);
             int max = hashMapData.get(ValueLayout.JAVA_INT, mapEntryOffset + MAX_OFFSET);
@@ -565,11 +560,11 @@ public class CalculateAverage_tkowalcz2 {
             hashMapData.set(ValueLayout.JAVA_INT, mapEntryOffset + MAX_OFFSET, Math.max(max, value));
             hashMapData.set(ValueLayout.JAVA_INT, mapEntryOffset + SUM_OFFSET, sum + value);
         }
-//
-//        public void clear() {
-//            for (int i = 0; i < hashMapData.byteSize(); i++) {
-//                hashMapData.set(ValueLayout.JAVA_BYTE, i, (byte) 0);
-//            }
-//        }
+        //
+        // public void clear() {
+        // for (int i = 0; i < hashMapData.byteSize(); i++) {
+        // hashMapData.set(ValueLayout.JAVA_BYTE, i, (byte) 0);
+        // }
+        // }
     }
 }

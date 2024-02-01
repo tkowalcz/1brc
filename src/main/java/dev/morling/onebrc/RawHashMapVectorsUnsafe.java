@@ -60,7 +60,7 @@ public class RawHashMapVectorsUnsafe {
         hashInput.intoMemorySegment(hashMapData, mapEntryOffset, ByteOrder.nativeOrder());
     }
 
-    //        public void addMeasurement(int mapEntryOffset, Vector<Byte> value) {
+    // public void addMeasurement(int mapEntryOffset, Vector<Byte> value) {
     public void addMeasurement(int mapEntryOffset, int value) {
         long baseOffset = hashMapDataUnsafe + mapEntryOffset;
         int tempSamplesCount = UnsafeAccess.UNSAFE.getInt(null, baseOffset + TEMP_SAMPLES_COUNT_OFFSET);

@@ -35,11 +35,11 @@ class OptimisedIntegerParsingTest {
     private static final ShortVector[] STOI_MUL_LOOKUP = {
             null,
             null,
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{0, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0),
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{100, 10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0),
+            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 0, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
+            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 100, 10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
             null,
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0),
-            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{-100, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0)
+            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ 10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0),
+            ShortVector.fromArray(ShortVector.SPECIES_256, new short[]{ -100, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0)
     };
 
     private static final VectorShuffle<Byte>[] STOI_REARRANGE_1 = new VectorShuffle[]{
@@ -105,13 +105,13 @@ class OptimisedIntegerParsingTest {
                 .add(sub2.rearrange(STOI_REARRANGE_2[lookupIndex2]))
                 .add(sub3.rearrange(STOI_REARRANGE_3[lookupIndex3]));
 
-//        long value = vector
-//                .castShape(ShortVector.SPECIES_256, 0)
-//                .mul(STOI_MUL_LOOKUP[lookupIndex])
-//                .reduceLanesToLong(VectorOperators.ADD);
+        // long value = vector
+        // .castShape(ShortVector.SPECIES_256, 0)
+        // .mul(STOI_MUL_LOOKUP[lookupIndex])
+        // .reduceLanesToLong(VectorOperators.ADD);
 
         // Then
-//        assertThat(value).isEqualTo(-349L);
+        // assertThat(value).isEqualTo(-349L);
     }
 
     @Test

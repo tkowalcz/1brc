@@ -35,12 +35,12 @@ public class DivideAndConquerMicrobenchmark extends OneBrcMicrobenchmark {
     // There are four combinations of possible mask results from comparing (less than) vector containing temperature
     // measurement with ASCII_ZERO. Hence, only four entries are populated.
     private static final short[][] STOI_MUL_LOOKUP_TEMPLATE = {
-            new short[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            new short[]{0, 0, -100, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            new short[]{0, 10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            new short[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            new short[]{0, 100, 10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-            new short[]{0, 0, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+            new short[]{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+            new short[]{ 0, 0, -100, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+            new short[]{ 0, 10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+            new short[]{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+            new short[]{ 0, 100, 10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+            new short[]{ 0, 0, -10, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
     };
 
     private static final short[] HASH_MUL_LOOKUP_TEMPLATE = {
@@ -83,7 +83,7 @@ public class DivideAndConquerMicrobenchmark extends OneBrcMicrobenchmark {
     }
 
     // We also need to know the size of temperature measurement in characters, lookup table works the same way as STOI_MUL_LOOKUP.
-    private static final int[] STOI_SIZE_LOOKUP = {0, 6, 4, 0, 5, 5};
+    private static final int[] STOI_SIZE_LOOKUP = { 0, 6, 4, 0, 5, 5 };
 
     private static final String FILE = "measurements.txt";
 
@@ -110,7 +110,8 @@ public class DivideAndConquerMicrobenchmark extends OneBrcMicrobenchmark {
             hashMapData = arena.allocate(10_000 * (4 + 100 + 28));
             hashMapDataWriteIndex = 4;
             sequence = 0;
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -251,7 +252,8 @@ public class DivideAndConquerMicrobenchmark extends OneBrcMicrobenchmark {
 
                     hashMapDataWriteIndex += SPECIES.vectorByteSize();
                     break;
-                } else {
+                }
+                else {
                     cityId = hashMapData.get(ValueLayout.JAVA_SHORT, cityOffset);
                     int cityNameOffset = cityOffset + 4;
 
@@ -259,7 +261,8 @@ public class DivideAndConquerMicrobenchmark extends OneBrcMicrobenchmark {
                     if (cityVector.compare(VectorOperators.EQ, byteVector1, CITY_LOOKUP_MASK_BYTE[delimiterPosition1]).trueCount() != delimiterPosition1) {
                         index1++;
                         probes++;
-                    } else {
+                    }
+                    else {
                         break;
                     }
                 }
@@ -305,7 +308,8 @@ public class DivideAndConquerMicrobenchmark extends OneBrcMicrobenchmark {
             }
 
             offset1++;
-        } else {
+        }
+        else {
             offset1 += newline + 1;
         }
         return offset1;
