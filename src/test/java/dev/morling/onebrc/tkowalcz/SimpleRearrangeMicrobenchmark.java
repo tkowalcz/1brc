@@ -78,10 +78,29 @@ public class SimpleRearrangeMicrobenchmark {
     }
 
     /*
-     * 0.03% │ 0x00007f46d44bfc09: vmovdqu xmm0,XMMWORD PTR [r11+0x18]
-     * 0.41% │ 0x00007f46d44bfc0f: vmovdqu xmm1,XMMWORD PTR [r10+0x18]
-     * 3.17% │ 0x00007f46d44bfc15: vpshufb xmm0,xmm0,xmm1
-     * 2.89% │ 0x00007f46d44bfc1a: vmovdqu XMMWORD PTR [r8+0x18],xmm0
+     * On Zen2:
+     * vmovdqu xmm0,XMMWORD PTR [r11+0x18]
+     * vmovdqu xmm1,XMMWORD PTR [r10+0x18]
+     * vpshufb xmm0,xmm0,xmm1
+     * vmovdqu XMMWORD PTR [r8+0x18],xmm0
+     *
+     * On Milan (??!!):
+     * cpu family      : 25
+     * model           : 1
+     * model name      : AMD EPYC-Milan Processor
+     * stepping        : 1
+     * microcode       : 0x1000065
+     * flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm rep_good nopl cpuid extd_apicid tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw topoext perfctr_core invpcid_single ssbd ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves clzero xsaveerptr wbnoinvd arat umip pku ospke rdpid fsrm
+     * bugs            : sysret_ss_attrs null_seg spectre_v1 spectre_v2 spec_store_bypass srso
+     *
+     * vmovdqu ymm0,YMMWORD PTR [r11+0x18]
+     * vmovdqu ymm1,YMMWORD PTR [r10+0x18]
+     * vperm2i128 ymm3,ymm0,ymm0,0x1
+     * vpshufb ymm3,ymm3,ymm1
+     * vpshufb ymm2,ymm0,ymm1
+     * vpaddb ymm4,ymm1,YMMWORD PTR [rip+0xffffffffffa8350b]
+     * vpblendvb ymm2,ymm2,ymm3,ymm4
+     * vmovdqu YMMWORD PTR [r8+0x18],ymm2
      *
      */
     @Benchmark
