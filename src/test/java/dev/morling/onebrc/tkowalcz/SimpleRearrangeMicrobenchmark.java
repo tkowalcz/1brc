@@ -70,7 +70,7 @@ public class SimpleRearrangeMicrobenchmark {
         intOutput = new int[32];
     }
 
-    // @Benchmark
+    @Benchmark
     @CompilerControl(CompilerControl.Mode.DONT_INLINE)
     public void rearrangeBytes() {
         ByteVector rearranged = byteVector1.rearrange(byteShuffle, byteVector2);
@@ -102,6 +102,13 @@ public class SimpleRearrangeMicrobenchmark {
      * vpblendvb ymm2,ymm2,ymm3,ymm4
      * vmovdqu YMMWORD PTR [r8+0x18],ymm2
      *
+     *
+     *
+     * vmovdqu ymm0,YMMWORD PTR [r11+0x18]
+     * vmovdqu ymm1,YMMWORD PTR [r10+0x18]
+     * vpermb ymm0,ymm1,ymm0
+     * vmovdqu YMMWORD PTR [r8+0x18],ymm0
+     *
      */
     @Benchmark
     @CompilerControl(CompilerControl.Mode.DONT_INLINE)
@@ -110,13 +117,29 @@ public class SimpleRearrangeMicrobenchmark {
         rearranged.intoArray(byteOutput, 0);
     }
 
-    // @Benchmark
+    @Benchmark
     @CompilerControl(CompilerControl.Mode.DONT_INLINE)
     public void rearrangeIntegers() {
         IntVector rearranged = intVector1.rearrange(intShuffle, intVector2);
         rearranged.intoArray(intOutput, 0);
     }
 
+    /*
+     * Intel Sapphire Rapids (AWS):
+     *
+     * cpu family	: 6
+     * model		: 143
+     * model name	: Intel(R) Xeon(R) Platinum 8488C
+     * stepping	: 8
+     * microcode	: 0x2b000571
+     *
+     * vmovdqu ymm0,YMMWORD PTR [r11+0x18]
+     * vmovq  xmm1,QWORD PTR [r10+0x18]
+     * vpmovzxbd ymm1,xmm1
+     * vpermd ymm0,ymm1,ymm0
+     * vmovdqu YMMWORD PTR [r8+0x18],ymm0
+     *
+     */
     @Benchmark
     @CompilerControl(CompilerControl.Mode.DONT_INLINE)
     public void rearrangeIntegersSimple() {
